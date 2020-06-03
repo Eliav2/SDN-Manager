@@ -10,8 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/node": "^14.0.9",
     "express": "^4.17.1",
+    "help": "^3.0.2",
     "joi": "^14.3.1",
-    "ovsdb-client": "^1.0.1"
+    "ovsdb-client": "^1.0.1",
+    "ts-node": "^8.10.2"
   }
 }

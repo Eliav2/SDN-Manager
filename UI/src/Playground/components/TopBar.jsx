@@ -71,6 +71,7 @@ const TopBar = (props) => {
 
   var returnTopBarApearnce = () => {
     let allowedActions = [];
+    // console.log(props.selected);
     if (props.selected) allowedActions = actions[props.selected.type];
     switch (props.actionState) {
       case "Normal":

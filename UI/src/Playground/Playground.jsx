@@ -4,8 +4,10 @@ import Box from "./components/Box";
 import TopBar from "./components/TopBar";
 import Xarrow from "./components/Xarrow";
 import MenuWindow from "./components/ModBoxMenu";
+import MaterialIcon from "material-icons-react";
 
-const shapes = ["wideBox", "tallBox", "intefaceBox"];
+// const shapes = ["wideBox", "tallBox", "intefaceBox"];
+const shapes = ["modBox"];
 
 const boxDefaultProps = {
   shape: "wideBox",
@@ -18,13 +20,21 @@ const boxDefaultProps = {
 const PlayGround = () => {
   const [interfaces, setInterfaces] = useState([
     {
-      id: "static1",
+      id: "ens33",
+      shape: "intefaceBox",
+    },
+    {
+      id: "ens88",
+      shape: "intefaceBox",
+    },
+    {
+      id: "lo",
       shape: "intefaceBox",
     },
   ]);
 
   const [boxes, setBoxes] = useState([
-    { id: "box1", menuWindowOpened: true },
+    // { id: "box1", menuWindowOpened: true },
     // { id: "box2", ...boxDefaultProps },
     // {
     //   id: "box1",
@@ -77,6 +87,7 @@ const PlayGround = () => {
       while (checkExsitence("box" + l)) l++;
       let { x, y } = e.target.getBoundingClientRect();
       var newName = prompt("Enter box name: ", "box" + l);
+      while (checkExsitence(newName)) newName = prompt("name taken,choose other: ");
       if (newName) {
         let newBox = { ...boxDefaultProps, id: newName, x: e.clientX - x, y: e.clientY - y, shape };
         setBoxes([...boxes, newBox]);
@@ -84,17 +95,15 @@ const PlayGround = () => {
     }
   };
 
-  const handleDropStatic = (e) => {
-    let shape = e.dataTransfer.getData("shape");
-    if (shapes.includes(shape)) {
-      let l = interfaces.length;
-      while (checkExsitence("static" + l)) l++;
-      let newName = prompt("Enter interface name: ", "static" + l);
-      let d = { interfacesInputsBar: "input", interfacesOutputsBar: "output" };
-      if (newName) {
-        let newItr = { id: newName, shape, type: d[e.target.id] };
-        setInterfaces([...interfaces, newItr]);
-      }
+  const handleAddInterface = (e) => {
+    let l = interfaces.length;
+    while (checkExsitence("static" + l)) l++;
+    let newName = prompt("Enter interface name: ", "static" + l);
+    while (checkExsitence(newName)) newName = prompt("name taken,choose other: ");
+    let d = { interfacesInputsBar: "input", interfacesOutputsBar: "output" };
+    if (newName) {
+      let newItr = { id: newName, shape: "intefaceBox", type: d[e.target.id] };
+      setInterfaces([...interfaces, newItr]);
     }
   };
 
@@ -145,17 +154,15 @@ const PlayGround = () => {
             ))}
           </div>
         </div>
-        <div
-          className="interfacesBarStyle"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDropStatic}
-          id="interfacesInputsBar"
-        >
+        <div className="interfacesBarStyle" id="interfacesInputsBar">
           <u className="interfaceTitleStyle">inputs</u>
           {interfaces.map((itr) => {
             const id = itr.id + ":<input>";
             return <Box {...boxProps} key={id} box={{ ...itr, id, name: itr.id }} position="static" sidePos="left" />;
           })}
+          <div className="button" style={{ position: "absolute", bottom: 5 }} onClick={handleAddInterface}>
+            <MaterialIcon size={30} icon="add" className="material-icons" />
+          </div>
         </div>
         <div
           id="boxesContainer"
@@ -169,17 +176,15 @@ const PlayGround = () => {
             <Box {...boxProps} key={box.id} box={box} position="absolute" sidePos="middle" />
           ))}
         </div>
-        <div
-          className="interfacesBarStyle"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDropStatic}
-          id="interfacesOutputsBar"
-        >
+        <div className="interfacesBarStyle" id="interfacesOutputsBar">
           <u className="interfaceTitleStyle">outputs</u>
           {interfaces.map((itr) => {
             const id = itr.id + ":<output>";
             return <Box {...boxProps} key={id} box={{ ...itr, id, name: itr.id }} position="static" sidePos="left" />;
           })}
+          <div className="button" style={{ position: "absolute", bottom: 5 }}>
+            <MaterialIcon size={30} icon="add" className="material-icons" />
+          </div>
         </div>
 
         {/* xarrow connections*/}

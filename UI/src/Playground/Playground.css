@@ -84,7 +84,7 @@
   align-items: center;
   height: calc(100% - 68px);
 }
-.wideBox,
+.modBox,
 .intefaceBox {
   border: 1px #999 solid;
   border-radius: 10px;
