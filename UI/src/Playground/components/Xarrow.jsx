@@ -21,7 +21,11 @@ export default ({ setSelected, selected, line: { props } }) => {
     },
   };
   let color = state.color;
+  // console.log(props.start);
+  let startAnchor = props.start.includes(":<input>") ? "right" : "auto";
+  let endAnchor = props.end.includes(":<output>") ? "left" : "auto";
+  // console.log(props);
   if (selected && selected.type === "arrow" && selected.id.start === props.start && selected.id.end === props.end)
     color = "red";
-  return <Xarrow {...{ ...defProps, ...props, ...state, color }} />;
+  return <Xarrow startAnchor={startAnchor} endAnchor={endAnchor} {...{ ...defProps, ...props, ...state, color }} />;
 };

@@ -101,22 +101,46 @@ const parseOVSDBrowsLikeIlikeIt = (rows) => {
 
 const getBridges = (remote, callback) => {
   // see section 4.2 here http://arthurchiao.art/blog/ovs-deep-dive-2 for list of valid request("get_schema","list_dbs" ,etc).
+  // see here https://tools.ietf.org/html/rfc7047 too full documatation to see how to play with ovsdb
 
   // first get from ovsdb-server all data we will need
-  // select columns you want to take from ovsdb by passing it to 'columns' in the object below
+  // select columns you want to take from ovsdb by passing it to 'columns' to the right tables.
+  // in order to see all available tables use:
+  //    sudo ovsdb-client list-tables
+  // in order to see all available columns use:
+  //    sudo ovsdb-client list-columns
+
+  // requset the data
   remote.call(
     "transact",
     "Open_vSwitch",
-    { op: "select", table: "Bridge", where: [], columns: ["_uuid", "name", "ports"] },
+    {
+      op: "select",
+      table: "Bridge",
+      where: [],
+      columns: ["_uuid", "name", "ports", "fail_mode", "datapath_id", "controller"],
+    },
     { op: "select", table: "Port", where: [], columns: ["_uuid", "name", "interfaces"] },
     {
       op: "select",
       table: "Interface",
       where: [],
-      // columns: ["_uuid", "name", "mac_in_use", "link_state", "statistics", "status"],
-      columns: undefined,
+      columns: ["_uuid", "name", "mac_in_use", "link_state", "statistics", "status", "type", "admin_state", "ofport"],
+      // columns: undefined, // use this to recive all available columns
     },
-    // { op: "select", table: "Controller", where: [[]],co },
+    {
+      op: "select",
+      table: "Controller",
+      where: [],
+      columns: ["_uuid", "target", "is_connected"],
+    },
+    {
+      op: "select",
+      table: "Open_vSwitch",
+      where: [],
+      columns: ["_uuid", "ovs_version"],
+    },
+
     (err, replay) => {
       if (err) throw err;
 
@@ -135,7 +159,17 @@ const getBridges = (remote, callback) => {
           bridges[i].ports[j].interfaces = parsed_replay[2].find((itr) => itr._uuid === bridges[i].ports[j].interfaces);
       }
 
-      console.log(bridges);
+      // add data about the controllers to the 'bridges' object
+      for (let i = 0; i < bridges.length; i++)
+        bridges[i].controller = parsed_replay[3].find((ctl) => ctl._uuid === bridges[i].controller);
+
+      // compine all parsed bridges data to the main Open_vSwitch data object
+      let data = parsed_replay[4][0];
+      data.bridges = bridges;
+
+      // return parsed data
+      // the parsed data contains all data `ovs-vsctl show` shows and more.
+      callback(data);
     }
   );
 };
@@ -146,7 +180,7 @@ new_client.connect(function (err, remote) {
     console.log("connection failed");
   } else {
     console.log("connection succeeded");
-    getBridges(remote, (bridges) => console.log(JSON.stringify(bridges)));
+    getBridges(remote, (bridges) => console.log(bridges));
   }
 });
 
