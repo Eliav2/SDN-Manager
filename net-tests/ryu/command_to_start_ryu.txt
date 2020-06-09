@@ -1,0 +1,2 @@
+# run ryu ofctl_rest API with stupid Controller that will connect between the ryu rest API and the switches:
+$ sudo ryu-manager stupid_switch.py ryu.app.ofctl_rest

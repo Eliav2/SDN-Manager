@@ -1,0 +1,1 @@
+sudo mn --topo=tree,2 --controller=remote --switch=ovs,protocols=OpenFlow14

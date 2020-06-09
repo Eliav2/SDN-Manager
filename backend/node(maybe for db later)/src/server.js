@@ -2,13 +2,13 @@ const Joi = require("joi");
 const express = require("express");
 const ovsdb = require("ovsdb-client");
 
-const app = express();
+// const app = express();
 
-const serverPort = process.env.PORT || 3162;
+// const serverPort = process.env.PORT || 3162;
 
-app.listen(serverPort, () => console.log(`Listening on port ${serverPort}...\nhttp://localhost:${serverPort}/`));
+// app.listen(serverPort, () => console.log(`Listening on port ${serverPort}...\nhttp://localhost:${serverPort}/`));
 
-app.get("/", (req, res) => res.send("yup. SDN Manager server is running."));
+// app.get("/", (req, res) => res.send("yup. SDN Manager server is running."));
 
 // app.get("/api/:resource", (req, res) => {
 //   let r = resources[req.params.resource];
@@ -63,6 +63,8 @@ app.get("/", (req, res) => res.send("yup. SDN Manager server is running."));
 // AutoAttach
 // Manager
 
+const parseArray = (arr) => arr.map((val) => parseValue(val));
+
 const parsePair = (pair) => {
   switch (pair[0]) {
     case "set":
@@ -73,8 +75,6 @@ const parsePair = (pair) => {
       return pair[1];
   }
 };
-
-parseArray = (arr) => arr.map((val) => parseValue(val));
 
 const parseValue = (value) => {
   if (Array.isArray(value)) return parsePair(value);
@@ -136,6 +136,12 @@ const getBridges = (remote, callback) => {
     },
     {
       op: "select",
+      table: "Manager",
+      where: [],
+      // columns: ["_uuid", "ovs_version"],
+    },
+    {
+      op: "select",
       table: "Open_vSwitch",
       where: [],
       columns: ["_uuid", "ovs_version"],
@@ -164,7 +170,7 @@ const getBridges = (remote, callback) => {
         bridges[i].controller = parsed_replay[3].find((ctl) => ctl._uuid === bridges[i].controller);
 
       // compine all parsed bridges data to the main Open_vSwitch data object
-      let data = parsed_replay[4][0];
+      let data = parsed_replay[5][0];
       data.bridges = bridges;
 
       // return parsed data
@@ -174,8 +180,8 @@ const getBridges = (remote, callback) => {
   );
 };
 
-var new_client = ovsdb.createClient("6640", "127.0.0.1");
-new_client.connect(function (err, remote) {
+const ovsdb_server = ovsdb.createClient("6640", "localhost");
+ovsdb_server.connect(function (err, remote) {
   if (err) {
     console.log("connection failed");
   } else {
@@ -184,6 +190,18 @@ new_client.connect(function (err, remote) {
   }
 });
 
+// var management_server = ovsdb.createClient("6632", "127.0.0.1");
+// management_server.connect(function (err, remote) {
+//   if (err) {
+//     console.log("connection failed");
+//   } else {
+//     console.log("connection succeeded");
+//     getBridges(remote, (bridges) => console.log(bridges));
+//   }
+// });
+
+//
+//
 // let db = new_client.database("Open_vSwitch");
 // console.log(db);
 // remote.call("transact", "Open_vSwitch", { op: "select", table: "Bridge", where: [] }, (err, replay) => {

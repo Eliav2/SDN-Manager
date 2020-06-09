@@ -1,0 +1,30 @@
+:root {
+  --interfacesBarWidthPx: 100px;
+  --canvasWidthVw: 70vw;
+  --canvasHeightVh: 70vh;
+}
+
+.switchList {
+  width: 70%;
+  height: 50px;
+  border: 1px solid black;
+  border-radius: 20px;
+  margin: 8px;
+  display: flex;
+  justify-content: left;
+  padding-left: 20px;
+  align-items: center;
+}
+
+.switchList:hover {
+  background-color: #c8c8c8;
+}
+
+.switchList:any-link {
+  color: black;
+  text-decoration: none;
+}
+
+.switchListTitle {
+  font-size: 1.2em;
+}

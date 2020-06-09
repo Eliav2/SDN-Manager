@@ -135,3 +135,12 @@
   flex-direction: column;
   border-radius: 10px;
 }
+
+.switchTitle {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translate(-50%, 0%);
+  font-size: 1.3em;
+  text-decoration: underline;
+}

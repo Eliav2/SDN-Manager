@@ -1,0 +1,15 @@
+{
+  "name": "proxyserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "proxyServer.js",
+  "dependencies": {
+    "cors-anywhere": "latest"
+  },
+  "scripts": {
+  	"start":"node proxyServer.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

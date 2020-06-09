@@ -5,6 +5,7 @@ import TopBar from "./components/TopBar";
 import Xarrow from "./components/Xarrow";
 import MenuWindow from "./components/ModBoxMenu";
 import MaterialIcon from "material-icons-react";
+import { useParams } from "react-router";
 
 // const shapes = ["wideBox", "tallBox", "intefaceBox"];
 const shapes = ["modBox"];
@@ -17,21 +18,14 @@ const boxDefaultProps = {
   y: 0,
 };
 
-const PlayGround = () => {
-  const [interfaces, setInterfaces] = useState([
-    {
-      id: "ens33",
-      shape: "intefaceBox",
-    },
-    {
-      id: "ens88",
-      shape: "intefaceBox",
-    },
-    {
-      id: "lo",
-      shape: "intefaceBox",
-    },
-  ]);
+const PlayGround = (props) => {
+  const { dpid } = useParams();
+  console.log(props.switches);
+  const switchSelf = props.switches[dpid];
+  console.log(switchSelf);
+  const [interfaces, setInterfaces] = useState(
+    switchSelf.ports.map((p) => ({ id: p.port_no, shape: "intefaceBox", name: p.name }))
+  );
 
   const [boxes, setBoxes] = useState([
     // { id: "box1", menuWindowOpened: true },
@@ -107,7 +101,7 @@ const PlayGround = () => {
     }
   };
 
-  const props = {
+  const topBarProps = {
     interfaces,
     setInterfaces,
     boxes,
@@ -158,7 +152,7 @@ const PlayGround = () => {
           <u className="interfaceTitleStyle">inputs</u>
           {interfaces.map((itr) => {
             const id = itr.id + ":<input>";
-            return <Box {...boxProps} key={id} box={{ ...itr, id, name: itr.id }} position="static" sidePos="left" />;
+            return <Box {...boxProps} key={id} box={{ ...itr, id }} position="static" sidePos="left" />;
           })}
           <div className="button" style={{ position: "absolute", bottom: 5 }} onClick={handleAddInterface}>
             <MaterialIcon size={30} icon="add" className="material-icons" />
@@ -170,7 +164,8 @@ const PlayGround = () => {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropDynamic}
         >
-          <TopBar {...props} />
+          <div className="switchTitle">{switchSelf.name}</div>
+          <TopBar {...topBarProps} />
 
           {boxes.map((box) => (
             <Box {...boxProps} key={box.id} box={box} position="absolute" sidePos="middle" />
@@ -180,7 +175,7 @@ const PlayGround = () => {
           <u className="interfaceTitleStyle">outputs</u>
           {interfaces.map((itr) => {
             const id = itr.id + ":<output>";
-            return <Box {...boxProps} key={id} box={{ ...itr, id, name: itr.id }} position="static" sidePos="left" />;
+            return <Box {...boxProps} key={id} box={{ ...itr, id }} position="static" sidePos="left" />;
           })}
           <div className="button" style={{ position: "absolute", bottom: 5 }}>
             <MaterialIcon size={30} icon="add" className="material-icons" />
