@@ -50,48 +50,48 @@ class SimpleSwitch(app_manager.RyuApp):
             flags=ofproto.OFPFF_SEND_FLOW_REM, actions=actions)
         datapath.send_msg(mod)
 
-    # @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
-    # def _packet_in_handler(self, ev):
-    #     msg = ev.msg
-    #     datapath = msg.datapath
-    #     ofproto = datapath.ofproto
+    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+    def _packet_in_handler(self, ev):
+        msg = ev.msg
+        datapath = msg.datapath
+        ofproto = datapath.ofproto
 
-    #     pkt = packet.Packet(msg.data)
-    #     eth = pkt.get_protocol(ethernet.ethernet)
+        pkt = packet.Packet(msg.data)
+        eth = pkt.get_protocol(ethernet.ethernet)
 
-    #     if eth.ethertype == ether_types.ETH_TYPE_LLDP:
-    #         # ignore lldp packet
-    #         return
-    #     dst = eth.dst
-    #     src = eth.src
+        if eth.ethertype == ether_types.ETH_TYPE_LLDP:
+            # ignore lldp packet
+            return
+        dst = eth.dst
+        src = eth.src
 
-    #     dpid = datapath.id
-    #     self.mac_to_port.setdefault(dpid, {})
+        dpid = datapath.id
+        self.mac_to_port.setdefault(dpid, {})
 
-    #     self.logger.info("packet in %s %s %s %s", dpid, src, dst, msg.in_port)
+        self.logger.info("packet in %s %s %s %s", dpid, src, dst, msg.in_port)
 
-    #     # learn a mac address to avoid FLOOD next time.
-    #     self.mac_to_port[dpid][src] = msg.in_port
+        # learn a mac address to avoid FLOOD next time.
+        self.mac_to_port[dpid][src] = msg.in_port
 
-    #     if dst in self.mac_to_port[dpid]:
-    #         out_port = self.mac_to_port[dpid][dst]
-    #     else:
-    #         out_port = ofproto.OFPP_FLOOD
+        if dst in self.mac_to_port[dpid]:
+            out_port = self.mac_to_port[dpid][dst]
+        else:
+            out_port = ofproto.OFPP_FLOOD
 
-    #     actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
+        actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
 
-    #     # install a flow to avoid packet_in next time
-    #     if out_port != ofproto.OFPP_FLOOD:
-    #         self.add_flow(datapath, msg.in_port, dst, src, actions)
+        # install a flow to avoid packet_in next time
+        if out_port != ofproto.OFPP_FLOOD:
+            self.add_flow(datapath, msg.in_port, dst, src, actions)
 
-    #     data = None
-    #     if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-    #         data = msg.data
+        data = None
+        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+            data = msg.data
 
-    #     out = datapath.ofproto_parser.OFPPacketOut(
-    #         datapath=datapath, buffer_id=msg.buffer_id, in_port=msg.in_port,
-    #         actions=actions, data=data)
-    #     datapath.send_msg(out)
+        out = datapath.ofproto_parser.OFPPacketOut(
+            datapath=datapath, buffer_id=msg.buffer_id, in_port=msg.in_port,
+            actions=actions, data=data)
+        datapath.send_msg(out)
 
     @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
     def _port_status_handler(self, ev):

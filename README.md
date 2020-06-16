@@ -3,6 +3,7 @@
 to run project run following commands:
 
 initiate ryu controller and ryu ofctl_rest API server:
+$ cd ~/programming/IDF\ projects/SDN\ Manager/SDN\ Manager/net-tests/ryu
 $ sudo ryu-manager stupid_switch.py ryu.app.ofctl_rest
 
 run emulated net using mininet: 

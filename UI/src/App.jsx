@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
-import Playground from "./Playground/Playground";
+import SwitchView from "./SwitchView/SwitchView";
 import SwitchesPage from "./switches/SwitchesPage";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import BounceLoader from "react-spinners/BounceLoader";
 
-const proxyAddrres = "http://localhost:9089/";
+export const proxyAddrres = "http://localhost:9089/";
 // in production proxyAddrres should be '' !
 
 const App = () => {
@@ -41,7 +41,6 @@ const App = () => {
               }
             }
             setSwitches(parsed_switches);
-            console.log(parsed_switches);
             setDataFetched(true);
           });
         },
@@ -62,16 +61,20 @@ const App = () => {
             <SwitchesPage switches={switches} />
           </Route>
           <Route path="/switch/:dpid">
-            <Playground switches={switches} />
+            <SwitchView switches={switches} />
           </Route>
         </Router>
       ) : (
         <div className="mainWindow">
           {connectFailed ? (
-            <h3>Can't connect to controller, or to ofctl_rest API at port 8080.</h3>
+            <h3>
+              Can't connect to controller, or to ofctl_rest API at port 8080.
+              <br />
+              (or in development - check proxy server is running)
+            </h3>
           ) : (
             <div>
-              <h3>loading...</h3>
+              <h3>fetching switches...</h3>
               <BounceLoader size={150} color={"#123abc"} loading={true} />
             </div>
           )}

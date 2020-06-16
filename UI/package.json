@@ -2,9 +2,12 @@
   "author": "Eliav Louski",
   "main": "ExamplePage.tsx",
   "dependencies": {
-    "material-icons-react": "1.0.4",
+    "@material-ui/core": "^4.10.1",
+    "@material-ui/icons": "^4.9.1",
     "ovsdb-client": "^1.0.1",
     "react": "^16.13.1",
+    "react-dnd": "^11.1.3",
+    "react-dnd-html5-backend": "^11.1.3",
     "react-dom": "^16.12.0",
     "react-draggable": "^4.4.2",
     "react-router": "^5.2.0",

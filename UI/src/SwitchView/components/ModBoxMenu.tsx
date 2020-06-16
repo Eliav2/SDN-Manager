@@ -1,11 +1,15 @@
 //@ts-nocheck
 
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import Draggable from "react-draggable";
-import MaterialIcon from "material-icons-react";
+// import MaterialIcon from "material-icons-react";
+import AddOutlinedIcon from "@material-ui/icons/AddOutlined";
+import DeleteOutlinedIcon from "@material-ui/icons/DeleteOutlined";
+import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
 import Popup from "reactjs-popup";
 import "./ModBoxMenu.css";
-import { matchFields } from "./aclsFields";
+import { matchFields, actionsFields } from "./aclsFields";
+import { CanvasContext } from "./../SwitchView";
 
 // const matchNames = ["in_port", "hw_addr"];
 
@@ -20,7 +24,7 @@ const PopUpMenu = ({ handleAddMatch, fields }) => {
     <Popup
       trigger={
         <div className="button addButton">
-          <MaterialIcon size={30} icon="add" className="material-icons" />
+          <AddOutlinedIcon fontSize={"large"} />
         </div>
       }
       position="right top"
@@ -28,7 +32,7 @@ const PopUpMenu = ({ handleAddMatch, fields }) => {
       closeOnDocumentClick
       mouseLeaveDelay={400}
       mouseEnterDelay={0}
-      contentStyle={{ border: "none", width: 150 }}
+      contentStyle={{ border: "none", width: 200, transition: "all 1s ease-out" }}
       arrow={true}
     >
       <div>
@@ -52,20 +56,20 @@ const PopUpMenu = ({ handleAddMatch, fields }) => {
               on="hover"
               mouseLeaveDelay={200}
               mouseEnterDelay={200}
-              contentStyle={{ border: "none", width: 150 }}
+              contentStyle={{ border: "none", width: 200 }}
               arrow={true}
             >
               <Popup
                 key={field[0]}
-                trigger={<div>{field[2]}</div>}
+                trigger={<div>{field[1]}</div>}
                 position="top center"
                 on="hover"
                 mouseLeaveDelay={0}
                 mouseEnterDelay={0}
-                contentStyle={{ border: "none", width: 150 }}
+                contentStyle={{ border: "none", width: 200 }}
                 arrow={true}
               >
-                {field[1]}
+                {field[2]}
               </Popup>
             </Popup>
           ))}
@@ -76,25 +80,26 @@ const PopUpMenu = ({ handleAddMatch, fields }) => {
 };
 
 //represents the UI of "actions" and "match" sections
-const SectionMenu = ({ sectionName, box, setBoxes, boxes, fields }) => {
-  // fields = [...[<fieldName>,<valueType>,<fieldDescription>]]
+const SectionMenu = ({ sectionName, box, fields }) => {
+  // fields = [...[<fieldName>,<fieldDescription>,<exampleForValue>]]
+  const c = useContext(CanvasContext);
 
   const handleAddField = (key) => {
     let newBox = { ...box };
     newBox.modData[sectionName][key] = "";
-    setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
+    c.setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
   };
 
   const handleDelField = (key) => {
     let newBox = { ...box };
     delete newBox.modData[sectionName][key];
-    setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
+    c.setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
   };
 
   const handleInputChange = (value, key) => {
     let newBox = { ...box };
     newBox.modData[sectionName][key] = value;
-    setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
+    c.setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
   };
 
   return (
@@ -111,13 +116,18 @@ const SectionMenu = ({ sectionName, box, setBoxes, boxes, fields }) => {
               on="hover"
               mouseLeaveDelay={0}
               mouseEnterDelay={400}
-              contentStyle={{ border: "none", width: 150 }}
+              contentStyle={{ border: "none", width: 200 }}
               arrow={true}
             >
               {fields.find((f) => f[0] === key)[2]}
             </Popup>
           </div>
-          <div className="propField propValue">
+          <div
+            className="propField propValue"
+            onMouseDown={
+              (e) => e.stopPropagation() // prevent the draging whan selecting text
+            }
+          >
             <input
               type="text"
               value={box.modData[sectionName][key]}
@@ -127,10 +137,10 @@ const SectionMenu = ({ sectionName, box, setBoxes, boxes, fields }) => {
               style={{ fontSize: "0.9em" }}
             />
           </div>
-          <MaterialIcon
-            size={30}
-            icon="delete"
-            className="material-icons button addButton"
+          <DeleteOutlinedIcon
+            fontSize={"large"}
+            // icon="delete"
+            className="button addButton"
             onClick={() => handleDelField(key)}
           />
         </div>
@@ -139,10 +149,11 @@ const SectionMenu = ({ sectionName, box, setBoxes, boxes, fields }) => {
   );
 };
 
-export default ({ setBoxes, box: boxProp, boxes }) => {
+export default React.memo(({ box: boxProp }) => {
+  const c = useContext(CanvasContext);
   if (!boxProp.modData) boxProp.modData = { match: {}, actions: {} };
   const handleClose = () => {
-    setBoxes((boxes) =>
+    c.setBoxes((boxes) =>
       boxes.map((box) =>
         box.id === boxProp.id
           ? {
@@ -154,19 +165,17 @@ export default ({ setBoxes, box: boxProp, boxes }) => {
     );
   };
 
-  // console.log(newBoxes[i]);
-
   return (
     <Draggable enableUserSelectHack={false} defaultPosition={{ x: boxProp.x, y: boxProp.y - 100 }}>
       <div className="menuWindowContainer" onClick={(e) => e.stopPropagation()}>
-        <MaterialIcon size={30} icon="close" className="material-icons button closeButton" onClick={handleClose} />
+        <CloseOutlinedIcon fontSize={"large"} className="button closeButton" onClick={handleClose} />
         <div className={"header"}>{`${boxProp.id}`}</div>
         <hr style={{ width: "90%" }} />
         <div className="propsContainer">
-          <SectionMenu sectionName="match" box={boxProp} setBoxes={setBoxes} fields={matchFields} boxes={boxes} />
-          <SectionMenu sectionName="actions" box={boxProp} setBoxes={setBoxes} />
+          <SectionMenu sectionName="match" box={boxProp} fields={matchFields} />
+          <SectionMenu sectionName="actions" box={boxProp} fields={actionsFields} />
         </div>
       </div>
     </Draggable>
   );
-};
+});

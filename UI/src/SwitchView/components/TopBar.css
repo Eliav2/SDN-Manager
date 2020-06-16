@@ -36,6 +36,8 @@
 }
 
 .actionBubble {
+  display: flex;
+  justify-content: center;
   background: white;
   border-radius: 50px;
   height: 80%;
@@ -43,6 +45,9 @@
   align-items: center;
   padding: 10px;
   margin: 5px;
+  max-width: 25%;
+  text-align: center;
+  flex: 0.5;
 }
 .actionBubble:hover {
   background: azure;
