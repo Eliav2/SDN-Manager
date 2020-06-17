@@ -6,7 +6,9 @@ const SwitchesPage = (props) => {
   return (
     <div className="mainWindow">
       <React.Fragment>
-        <div className="switchListTitle">Detected switches:</div>
+        <div className="switchListTitle">
+          {Object.keys(props.switches).length > 0 ? "Detected vSwitches:" : "No Detected vSwitches."}
+        </div>
         {Object.keys(props.switches).map((dpid) => {
           let { ports, name } = props.switches[dpid];
           return (

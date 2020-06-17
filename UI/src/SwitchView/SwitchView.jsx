@@ -11,11 +11,17 @@ import PortsBar from "./components/PortsBar";
 import TestComponent from "./components/TestComponent";
 import BounceLoader from "react-spinners/BounceLoader";
 import SwitchDetailsWindow from "./components/SwitchDetailsWindow";
+import { DragDropContext, DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+
 // import MaterialIcon from "material-icons-react";
 
 // const shapes = ["wideBox", "tallBox", "portBox"];
 export const CanvasContext = createContext();
 export const constants = { draggingGrid: [1, 1] };
+export const dndTypes = {
+  toolBoxItem: "toolBoxItem",
+};
 
 const shapes = ["modBox"];
 
@@ -297,66 +303,66 @@ const SwitchView = (props) => {
     <div>
       <div className="canvasStyle" id="canvas" onClick={() => handleSelect(null)}>
         {dataFetched ? (
-          <CanvasContext.Provider value={canvasProps}>
-            <TestComponent canvasProps={canvasProps} />
+          <DndProvider backend={HTML5Backend}>
+            <CanvasContext.Provider value={canvasProps}>
+              <TestComponent canvasProps={canvasProps} />
 
-            <div className="switchTopBar">
-              <div className="switchTitle">{switchSelf.name}</div>
-              <InfoOutlinedIcon
-                fontSize={"large"}
-                // color="black"
-                className="infoButton"
-                onClick={() => setSwitchDetailsWindow(true)}
-              />
-            </div>
-            <div className="innerCanvas">
-              <div className="toolboxMenu">
-                <div className="toolboxTitle">Drag & drop me!</div>
-                <hr />
-                <div className="toolboxContainer">
-                  {shapes.map((shapeName) => (
-                    <div
-                      key={shapeName}
-                      className={shapeName}
-                      onDragStart={(e) => e.dataTransfer.setData("shape", shapeName)}
-                      draggable
-                    >
-                      {shapeName}
-                      {/* <div style={{ textAlign: "center" }}> {shapeName}</div>
-                  <img src={shapeName2Icon[shapeName]} alt="SwitchIcon" className={"switchIcon"} /> */}
-                    </div>
+              <div className="switchTopBar">
+                <div className="switchTitle">{switchSelf.name}</div>
+                <InfoOutlinedIcon
+                  fontSize={"large"}
+                  // color="black"
+                  className="infoButton"
+                  onClick={() => setSwitchDetailsWindow(true)}
+                />
+              </div>
+              <div className="innerCanvas">
+                <div className="toolboxMenu">
+                  <div className="toolboxTitle">Drag & drop me!</div>
+                  <hr />
+                  <div className="toolboxContainer">
+                    {shapes.map((shapeName) => (
+                      <div
+                        key={shapeName}
+                        className={shapeName}
+                        onDragStart={(e) => e.dataTransfer.setData("shape", shapeName)}
+                        draggable
+                      >
+                        {shapeName}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <PortsBar ports={ports} portType={"input"} />
+                {/* <PortsBar {...{ ports, portType: "input" }} /> */}
+                <div
+                  id="boxesContainer"
+                  className="boxesContainer"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDropBox}
+                >
+                  <TopBar />
+
+                  {boxes.map((box) => (
+                    <Box key={box.id} {...{ box, boxes }} />
                   ))}
                 </div>
-              </div>
-              <PortsBar ports={ports} portType={"input"} />
-              {/* <PortsBar {...{ ports, portType: "input" }} /> */}
-              <div
-                id="boxesContainer"
-                className="boxesContainer"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDropBox}
-              >
-                <TopBar />
-
-                {boxes.map((box) => (
-                  <Box key={box.id} {...{ box, boxes }} />
+                <PortsBar ports={ports} portType={"output"} />
+                {/* <PortsBar {...{ ports, portType: "output" }} /> */}
+                {/* xarrow connections*/}
+                {lines.map((line, i) => (
+                  <Xarrow key={line.props.start + "-" + line.props.end + i} {...{ line, selected }} />
                 ))}
+                {/* boxes menu that may be opened */}
+                {boxes.map((box, i) => {
+                  return box.menuWindowOpened ? <MenuWindow key={box.id} box={box} /> : null;
+                })}
               </div>
-              <PortsBar ports={ports} portType={"output"} />
-              {/* <PortsBar {...{ ports, portType: "output" }} /> */}
-              {/* xarrow connections*/}
-              {lines.map((line, i) => (
-                <Xarrow key={line.props.start + "-" + line.props.end + i} {...{ line, selected }} />
-              ))}
-              {/* boxes menu that may be opened */}
-              {boxes.map((box, i) => {
-                return box.menuWindowOpened ? <MenuWindow key={box.id} box={box} /> : null;
-              })}
-            </div>
-            {switchDetailsWindow ? (
-              <SwitchDetailsWindow {...{ setSwitchDetailsWindow, flowEnteries: switchSelf.flowEnteries }} />
-            ) : null}
-          </CanvasContext.Provider>
+              {switchDetailsWindow ? (
+                <SwitchDetailsWindow {...{ setSwitchDetailsWindow, flowEnteries: switchSelf.flowEnteries }} />
+              ) : null}
+            </CanvasContext.Provider>
+          </DndProvider>
         ) : (
           <div className="mainWindow">
             <h3>fetching switch data...</h3>
@@ -369,3 +375,4 @@ const SwitchView = (props) => {
   );
 };
 export default SwitchView;
+// export default DragDropContext(HTML5Backend)(SwitchView);

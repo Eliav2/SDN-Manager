@@ -46,7 +46,7 @@ const Box = (props) => {
         id={box.id}
       >
         <div>{box.name ? box.name : box.id}</div>
-        <ConnectPointsWrapper element={box} setWasDragged={setWasDragged} />
+        {/* <ConnectPointsWrapper element={box} setWasDragged={setWasDragged} /> */}
       </div>
     </Draggable>
   );

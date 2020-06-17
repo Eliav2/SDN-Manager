@@ -2,6 +2,8 @@ import React, { useState, useRef, useContext } from "react";
 import Draggable from "react-draggable";
 import Xarrow from "react-xarrows";
 import { CanvasContext } from "./../SwitchView";
+import { DragSource, DragDropContext } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 const d = {
   left: { left: 0, top: "50%", transform: "translate(-50%, -50%)" },
@@ -96,4 +98,33 @@ const ConnectPointsWrapper = ({ connectPoints = ["right", "left", "top", "bottom
   );
 };
 
+const dndSource = {
+  beginDrag(props) {
+    // Return the data describing the dragged item
+    const item = { id: props.id };
+    return item;
+  },
+
+  endDrag(props, monitor, component) {
+    if (!monitor.didDrop()) {
+      return;
+    }
+
+    // When dropped on a compatible target, do something
+    const item = monitor.getItem();
+    const dropResult = monitor.getDropResult();
+    // CardActions.moveCardToList(item.id, dropResult.listId);
+  },
+};
+
+function dndCollect(connect, monitor) {
+  return {
+    // Call this function inside render()
+    // to let React DnD handle the drag events:
+    connectDragSource: connect.dragSource(),
+    // You can ask the monitor about the current drag state:
+    isDragging: monitor.isDragging(),
+  };
+}
 export default ConnectPointsWrapper;
+// export default DragDropContext(HTML5Backend)(DragSource("connectPoint", dndSource, dndCollect)(ConnectPointsWrapper));

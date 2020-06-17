@@ -3,11 +3,10 @@
 to run project run following commands:
 
 initiate ryu controller and ryu ofctl_rest API server:
-$ cd ~/programming/IDF\ projects/SDN\ Manager/SDN\ Manager/net-tests/ryu
-$ sudo ryu-manager stupid_switch.py ryu.app.ofctl_rest
+$ sudo ryu-manager ~/programming/IDF\ projects/SDN\ Manager/SDN\ Manager/net-tests/ryu/simple_switch_13.py ryu.app.ofctl_rest
 
 run emulated net using mininet: 
-$ sudo mn --topo=tree,2 --controller=remote --switch=ovs,protocols=OpenFlow14
+$ sudo mn --topo=tree,2 --controller=remote --switch=ovs,protocols=OpenFlow13
 
 run proxy server(because react request passes through proxy server to prevent CORS): 
 $ node ~/programming/IDF\ projects/SDN\ Manager/SDN\ Manager/backend/proxyServer/proxyServer.js

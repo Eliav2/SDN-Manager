@@ -17,6 +17,7 @@ const Port = ({ port, portType }) => {
       <Popup
         trigger={
           <div
+            onDragStart={(e) => console.log("onDragStart", e.target)}
             ref={port.ref}
             className={`portBox hoverMarker`}
             style={{ background, position: "relative" }}
@@ -24,25 +25,15 @@ const Port = ({ port, portType }) => {
               if (wasDragged == false) c.handleBoxClick(e, port);
               setWasDragged(false);
             }}
-            // onDragOver={(e) => {
-            //   console.log("onDragOver");
-            //   e.preventDefault();
-            // }}
-            // onDrop={(e) => {
-            //   console.log("onDrop");
-            // }}
-            // onMouseEnter={() => console.log("onMouseEnter")}
-            // onMouseLeave={() => console.log("onMouseLeave")}
-            // onMouseOut={(e) => console.log("onMouseOut", e.target)}
-            // onMouseOver={(e) => console.log("onMouseOver", e.target)}
             id={port.id}
             // draggable
           >
-            <ConnectPointsWrapper
+            {/* <ConnectPointsWrapper
+              // onDrop
               connectPoints={[portType === "input" ? "right" : "left"]}
               element={port}
               setWasDragged={setWasDragged}
-            />
+            /> */}
             <div>
               {port.name}
               <br />
