@@ -4,15 +4,16 @@ import "./SwitchView.css";
 import Box from "./components/Box";
 import TopBar from "./components/TopBar";
 import Xarrow from "./components/Xarrow";
-import MenuWindow from "./components/ModBoxMenu";
+import ModBoxWindow from "./components/ModBoxWindow";
 import { useParams } from "react-router";
-import { proxyAddrres } from "./../App";
+import { proxyAddress } from "./../App";
 import PortsBar from "./components/PortsBar";
 import TestComponent from "./components/TestComponent";
 import BounceLoader from "react-spinners/BounceLoader";
 import SwitchDetailsWindow from "./components/SwitchDetailsWindow";
 import { DragDropContext, DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import _ from "lodash";
 
 // import MaterialIcon from "material-icons-react";
 
@@ -35,7 +36,7 @@ const shapes = ["modBox"];
 
 const SwitchView = (props) => {
   const { dpid } = useParams();
-  const [switchSelf, setSwitchSelf] = useState(props.switches[dpid]);
+  const [switchSelf, setSwitchSelf] = useState({ ...props.switches[dpid], flowEntries: [] });
   const [ports, setPorts] = useState(
     switchSelf.ports.map((p) => ({
       shape: "portBox",
@@ -49,17 +50,28 @@ const SwitchView = (props) => {
 
   const [switchDetailsWindow, setSwitchDetailsWindow] = useState(false);
   useEffect(() => {
-    fetch(proxyAddrres + "http://localhost:8080/stats/flow/" + dpid)
+    fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid)
       .then((res) => res.json())
       .then((result) => {
         setDataFetched(true);
-        setSwitchSelf({ ...switchSelf, flowEnteries: result[dpid] });
-        // console.log("flowEnteries", flowEnteries);
+        setSwitchSelf({ ...switchSelf, flowEntries: result[dpid].map((f) => ({ details: f, visible: false })) });
+        // console.log("flowEntries", flowEntries);
         // console.log("?", result);
       });
   }, []);
 
-  // console.log("ports", ports);
+  const toggleFlowVisibility = useCallback(
+    (flow) => {
+      setSwitchSelf((switchSelf) => {
+        let newFlow = switchSelf.flowEntries.find((f) => _.isEqual(f, flow));
+        newFlow.visible = !newFlow.visible;
+        return { ...switchSelf };
+      });
+    },
+    [switchSelf]
+  );
+
+  const drawFlow = useCallback((flow) => {});
 
   const [boxes, setBoxes] = useState([
     // { id: "box1", menuWindowOpened: true },
@@ -92,6 +104,7 @@ const SwitchView = (props) => {
     //   },
     // },
   ]);
+  console.log("boxes", boxes);
 
   // selected:{id:string,type:"arrow"|"box"}
   const [selected, setSelected] = useState(null);
@@ -109,7 +122,7 @@ const SwitchView = (props) => {
     [selected, actionState]
   );
 
-  const checkExsitence = useCallback(
+  const checkExistence = useCallback(
     (id) => {
       return [...boxes, ...ports].map((b) => b.id).includes(id);
     },
@@ -133,7 +146,7 @@ const SwitchView = (props) => {
 
   const handleBoxClick = useCallback(
     (e, box) => {
-      e.stopPropagation(); //so only the click event on the box will fire on not on the conainer itself
+      e.stopPropagation(); //so only the click event on the box will fire on not on the container itself
       if (actionState === "Normal") {
         handleSelect(e, box);
       } else if (actionState === "Add Connections" && selected.id !== box.id && !box.id.includes(":<input>")) {
@@ -166,9 +179,9 @@ const SwitchView = (props) => {
 
   // const handleAddPort = (e) => {
   //   let l = ports.length;
-  //   while (checkExsitence("static" + l)) l++;
+  //   while (checkExistence("static" + l)) l++;
   //   let newName = prompt("Enter port name: ", "static" + l);
-  //   while (checkExsitence(newName)) newName = prompt("name taken,choose other: ");
+  //   while (checkExistence(newName)) newName = prompt("name taken,choose other: ");
   //   let d = { portsInputsBar: "input", portsOutputsBar: "output" };
   //   if (newName) {
   //     let newItr = { id: newName, shape: "portBox", type: d[e.target.id] };
@@ -181,9 +194,9 @@ const SwitchView = (props) => {
       x -= x % constants.draggingGrid[0];
       y -= y % constants.draggingGrid[1];
       let l = boxes.length;
-      while (checkExsitence("box" + l)) l++;
+      while (checkExistence("box" + l)) l++;
       var newName = prompt("Enter box name: ", "box" + l);
-      while (checkExsitence(newName)) newName = prompt("name taken,choose other: ");
+      while (checkExistence(newName)) newName = prompt("name taken,choose other: ");
       if (newName) {
         let newBox = { id: newName, x, y, shape };
         setBoxes([...boxes, newBox]);
@@ -236,6 +249,8 @@ const SwitchView = (props) => {
     );
   }, [selected]);
 
+  // const ca
+  //
   const canvasProps = useMemo(
     () => ({
       // lines,
@@ -254,6 +269,7 @@ const SwitchView = (props) => {
       removeSelectedLine,
       openModsWindowOfSelected,
       handleSelect,
+      toggleFlowVisibility,
     }),
     [
       // lines,
@@ -272,6 +288,7 @@ const SwitchView = (props) => {
       removeSelectedLine,
       openModsWindowOfSelected,
       handleSelect,
+      toggleFlowVisibility,
     ]
   );
 
@@ -295,7 +312,7 @@ const SwitchView = (props) => {
   //   openModsWindowOfSelected,
   // };
 
-  // console.log("SwitchView renderd");
+  // console.log("SwitchView rendered");
 
   // console.log("switchSelf", switchSelf);
 
@@ -324,7 +341,7 @@ const SwitchView = (props) => {
                     {shapes.map((shapeName) => (
                       <div
                         key={shapeName}
-                        className={shapeName}
+                        className={shapeName + " grabble"}
                         onDragStart={(e) => e.dataTransfer.setData("shape", shapeName)}
                         draggable
                       >
@@ -355,11 +372,11 @@ const SwitchView = (props) => {
                 ))}
                 {/* boxes menu that may be opened */}
                 {boxes.map((box, i) => {
-                  return box.menuWindowOpened ? <MenuWindow key={box.id} box={box} /> : null;
+                  return box.menuWindowOpened ? <ModBoxWindow key={box.id} box={box} /> : null;
                 })}
               </div>
               {switchDetailsWindow ? (
-                <SwitchDetailsWindow {...{ setSwitchDetailsWindow, flowEnteries: switchSelf.flowEnteries }} />
+                <SwitchDetailsWindow {...{ setSwitchDetailsWindow, flowEntries: switchSelf.flowEntries }} />
               ) : null}
             </CanvasContext.Provider>
           </DndProvider>

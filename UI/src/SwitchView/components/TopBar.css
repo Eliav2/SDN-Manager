@@ -51,6 +51,7 @@
 }
 .actionBubble:hover {
   background: azure;
+  cursor: pointer;
 }
 .actionBubble:active {
   background: DeepSkyBlue;

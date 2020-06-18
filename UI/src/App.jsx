@@ -5,8 +5,8 @@ import SwitchesPage from "./switches/SwitchesPage";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import BounceLoader from "react-spinners/BounceLoader";
 
-export const proxyAddrres = "http://localhost:9089/";
-// in production proxyAddrres should be '' !
+export const proxyAddress = "http://localhost:9089/";
+// in production proxyAddress should be '' !
 
 const App = () => {
   const [dataFetched, setDataFetched] = useState(false);
@@ -15,12 +15,12 @@ const App = () => {
 
   useEffect(() => {
     let switches = {};
-    fetch(proxyAddrres + "http://localhost:8080/stats/switches")
+    fetch(proxyAddress + "http://localhost:8080/stats/switches")
       .then((res) => res.json())
       .then(
         (switchesDpids) => {
           const promises = switchesDpids.map((dpid) => {
-            return fetch(proxyAddrres + "http://localhost:8080/stats/portdesc/" + dpid)
+            return fetch(proxyAddress + "http://localhost:8080/stats/portdesc/" + dpid)
               .then((res) => res.json())
               .then(
                 (ports) => {

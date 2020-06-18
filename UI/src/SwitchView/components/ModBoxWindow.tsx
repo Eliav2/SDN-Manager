@@ -7,9 +7,8 @@ import AddOutlinedIcon from "@material-ui/icons/AddOutlined";
 import DeleteOutlinedIcon from "@material-ui/icons/DeleteOutlined";
 import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
 import Popup from "reactjs-popup";
-import "./ModBoxMenu.css";
 import { matchFields, actionsFields } from "./aclsFields";
-import { CanvasContext } from "./../SwitchView";
+import { CanvasContext } from "../SwitchView";
 
 // const matchNames = ["in_port", "hw_addr"];
 

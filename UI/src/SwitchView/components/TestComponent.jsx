@@ -3,7 +3,7 @@ import { CanvasContext } from "./../SwitchView";
 
 const TestComponent = () => {
   //   const c = useContext(CanvasContext);
-  // console.log("!!!!!!!!!!!!!1TestComponent render!!!!!!!!!!!!");
+  console.log("!!!!!!!!!!!!!1TestComponent render!!!!!!!!!!!!");
   return null;
 };
 
