@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext", "es2017"],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -13,11 +13,35 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react",
-    "noImplicitAny": false,
-    "noEmitOnError": false,
-    "noUnusedLocals": false,
-    "strictNullChecks": false
+    "noImplicitAny": true,
+    // "noUnusedLocals": false,
+    "strictNullChecks": false,
+    // "noErrorTruncation": true,
+    "jsx": "react"
   },
   "include": ["src"]
 }
+
+// {
+//   "compilerOptions": {
+//     "target": "es5",
+//     "lib": ["dom", "dom.iterable", "es2017"],
+//     "allowJs": true,
+//     "skipLibCheck": true,
+//     "esModuleInterop": true,
+//     "allowSyntheticDefaultImports": true,
+//     "strict": true,
+//     "forceConsistentCasingInFileNames": true,
+//     "module": "esnext",
+//     "moduleResolution": "node",
+//     "resolveJsonModule": true,
+//     "isolatedModules": true,
+//     "noEmit": true,
+//     "jsx": "react",
+//     "noImplicitAny": false,
+//     "noEmitOnError": false,
+//     "noUnusedLocals": false,
+//     "strictNullChecks": false
+//   },
+//   "include": ["src"]
+// }

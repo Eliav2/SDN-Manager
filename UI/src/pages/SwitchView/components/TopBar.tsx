@@ -2,21 +2,33 @@ import React, { useContext } from "react";
 import "./TopBar.css";
 import KeyboardArrowUpOutlinedIcon from "@material-ui/icons/KeyboardArrowUpOutlined";
 // import MaterialIcon from "material-icons-react";
-import { CanvasContext } from "./../SwitchView";
+import { CanvasContext } from "../SwitchView";
+import { PortType } from "./Port";
+import { BoxType } from "./Box";
 
 const actions = {
   modBox: ["Edit Mods", "Add Connections", "Remove Connections", "Delete"],
   portBox: ["Add Connections", "Remove Connections"],
   portBoxOut: [],
   arrow: ["Remove Connection"],
-};
+} as const;
+
+type Writeable<T> = { -readonly [P in keyof T]: Writeable<T[P]> };
+type ArrayElem<A> = A extends Array<infer Elem> ? Elem : never;
+function elemT<T>(array: T): Array<ArrayElem<T>> {
+  return array as any;
+}
+
+type actionsType = typeof actions;
+type actionsKeysType = keyof actionsType;
+export type actionsTypes = actionsType[actionsKeysType][number] | "Normal";
 
 const TopBar = () => {
   const c = useContext(CanvasContext);
 
   // console.log("Topbar renderd");
 
-  const handleEditAction = (action) => {
+  const handleEditAction = (action: actionsTypes) => {
     switch (action) {
       case "Add Connections":
         c.setActionState("Add Connections");
@@ -33,25 +45,27 @@ const TopBar = () => {
         c.openModsWindowOfSelected();
         break;
       case "Delete":
-        c.removeBox();
+        c.removeSelectedBox();
 
         break;
       default:
     }
   };
 
-  var returnTopBarApearnce = () => {
-    let allowedActions = [];
+  var returnTopBarAppearance = () => {
+    let allowedActions: actionsType[actionsKeysType] = [];
 
+    allowedActions.map(() => {});
     if (c.selected) {
       allowedActions = actions[c.selected.shape];
-      if (c.selected.shape.includes("Box") && c.selected.id.includes(":<output>")) allowedActions = actions.portBoxOut;
+      if (c.selected.shape.includes("Box") && (c.selected as BoxType | PortType).id.includes(":<output>"))
+        allowedActions = actions.portBoxOut;
     }
     switch (c.actionState) {
       case "Normal":
         return (
           <div className="actionBubblesContainer">
-            {allowedActions.map((action, i) => (
+            {elemT(allowedActions).map((action: actionsTypes, i: number) => (
               <div className="actionBubble" key={i} onClick={() => handleEditAction(action)}>
                 {action}
               </div>
@@ -87,7 +101,7 @@ const TopBar = () => {
       <div className="topBarLabel" onClick={() => c.handleSelect(null)}>
         <KeyboardArrowUpOutlinedIcon fontSize={"large"} className=" topBarToggleIcon" />
       </div>
-      {returnTopBarApearnce()}
+      {returnTopBarAppearance()}
     </div>
   );
 };

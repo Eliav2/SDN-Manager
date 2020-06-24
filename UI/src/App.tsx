@@ -1,24 +1,45 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
-import SwitchView from "./SwitchView/SwitchView";
-import SwitchesPage from "./switches/SwitchesPage";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import SwitchView from "./pages/SwitchView/SwitchView";
+import SwitchesPage from "./pages/switches/SwitchesPage";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import BounceLoader from "react-spinners/BounceLoader";
 
 export const proxyAddress = "http://localhost:9089/";
 // in production proxyAddress should be '' !
 
+export type portType = {
+  advertised: number;
+  config: number;
+  curr: number;
+  curr_speed: number;
+  hw_addr: string;
+  max_speed: number;
+  name: string;
+  peer: number;
+  port_no: string;
+  state: number;
+  supported: number;
+};
+
+export type switchesType = {
+  [dpid: string]: {
+    ports: portType[];
+    name: string;
+  };
+};
+
 const App = () => {
   const [dataFetched, setDataFetched] = useState(false);
-  const [switches, setSwitches] = useState({});
+  const [switches, setSwitches] = useState<switchesType>({});
   const [connectFailed, setConnectFailed] = useState(false);
 
   useEffect(() => {
-    let switches = {};
+    let switches: { [dpid: string]: portType[] } = {};
     fetch(proxyAddress + "http://localhost:8080/stats/switches")
       .then((res) => res.json())
       .then(
-        (switchesDpids) => {
+        (switchesDpids: string[]) => {
           const promises = switchesDpids.map((dpid) => {
             return fetch(proxyAddress + "http://localhost:8080/stats/portdesc/" + dpid)
               .then((res) => res.json())
@@ -32,7 +53,7 @@ const App = () => {
               );
           });
           Promise.all(promises).then(() => {
-            let parsed_switches = {};
+            let parsed_switches: switchesType = {};
             for (let dpid in switches) {
               for (let i = 0; i < switches[dpid].length; i++) {
                 if (switches[dpid][i].port_no === "LOCAL") {
@@ -57,12 +78,14 @@ const App = () => {
       <hr />
       {dataFetched ? (
         <Router>
-          <Route exact path="/">
-            <SwitchesPage switches={switches} />
-          </Route>
-          <Route path="/switch/:dpid">
-            <SwitchView switches={switches} />
-          </Route>
+          <Switch>
+            <Route exact path="/">
+              <SwitchesPage switches={switches} />
+            </Route>
+            <Route path="/switch/:dpid">
+              <SwitchView switches={switches} />
+            </Route>
+          </Switch>
         </Router>
       ) : (
         <div className="mainWindow">
