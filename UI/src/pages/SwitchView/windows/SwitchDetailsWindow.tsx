@@ -1,44 +1,10 @@
-import React, { useState, useContext } from "react";
+import React, { useContext } from "react";
 import { CanvasContext, switchSelfType } from "../SwitchView";
 import Draggable from "react-draggable";
 import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
 import EditOutlinedIcon from "@material-ui/icons/EditOutlined";
-
-import { BoxType } from "../components/Box";
-
-type FlowDetailsProps = {
-  i: number;
-  flowEntry: switchSelfType["flowEntries"][number];
-};
-
-const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
-  const c = useContext(CanvasContext);
-  const { details } = flowEntry;
-  const background = flowEntry.visible ? "LemonChiffon" : undefined;
-  return (
-    <div
-      className="propBoxEntryPreview grayHover"
-      style={{ background }}
-      onClick={() => c.toggleFlowVisibility(flowEntry)}
-    >
-      <div style={{ width: 20 }}>{i}:</div>
-      <div style={{ flex: 0.9 }}>
-        {
-          <ul>
-            {Object.keys(details.match).map((matchKey) => (
-              <li key={matchKey}>
-                {matchKey}: {details.match[matchKey]}
-              </li>
-            ))}
-          </ul>
-        }
-      </div>
-      <div style={{ width: 30 }}>--{">"}</div>
-      <div style={{ flex: 0.9 }}>{JSON.stringify(details.actions, null, 2)}</div>
-      <EditOutlinedIcon fontSize={"large"} className="button" />
-    </div>
-  );
-};
+import DeleteOutlineIcon from "@material-ui/icons/DeleteOutline";
+// import { matchFieldsType } from "../components/aclsFields";
 
 type SwitchDetailsWindowProps = {
   setSwitchDetailsWindow: (value: React.SetStateAction<boolean>) => void;
@@ -64,4 +30,60 @@ const SwitchDetailsWindow = ({ setSwitchDetailsWindow, flowEntries = [] }: Switc
   );
 };
 
-export default React.memo(SwitchDetailsWindow);
+type FlowDetailsProps = {
+  i: number;
+  flowEntry: switchSelfType["flowEntries"][number];
+};
+
+const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
+  const c = useContext(CanvasContext);
+  const { details } = flowEntry;
+  // details.
+  const background = flowEntry.visible ? "LemonChiffon" : undefined;
+
+  return (
+    <div
+      className="propBoxEntryPreview grayHover"
+      style={{ background }}
+      onClick={() => c.toggleFlowVisibility(flowEntry)}
+    >
+      <div style={{ width: 20 }}>{i}:</div>
+      <div style={{ flex: 0.9 }}>
+        {
+          <ul>
+            {(Object.keys(details.match) as Array<keyof typeof details.match>).map((matchKey) => (
+              <li key={matchKey}>
+                {matchKey}: {details.match[matchKey]}
+              </li>
+            ))}
+          </ul>
+        }
+      </div>
+      <div style={{ width: 30 }}>--{">"}</div>
+      <div style={{ flex: 0.9 }}>{JSON.stringify(details.actions, null, 2)}</div>
+      <EditOutlinedIcon
+        fontSize={"large"}
+        className={`button`}
+        onClick={(e) => {
+          e.stopPropagation();
+          c.setBoxes((boxes) => {
+            const newBoxes = [...boxes];
+            const newBox = newBoxes.find((b) => b.id === JSON.stringify(flowEntry.details.match));
+            newBox.menuWindowOpened = !newBox.menuWindowOpened;
+            return newBoxes;
+          });
+        }}
+      />
+      <DeleteOutlineIcon
+        fontSize={"large"}
+        className="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          c.delFlow(flowEntry);
+        }}
+      />
+    </div>
+  );
+};
+
+export default SwitchDetailsWindow;

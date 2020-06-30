@@ -1,19 +1,21 @@
-import React, { useState, useRef, createContext, useEffect, useCallback, useMemo } from "react";
+import React, { useState, createContext, useEffect, useCallback, useMemo } from "react";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import "./SwitchView.css";
 import Box, { BoxType } from "./components/Box";
 import TopBar, { actionsTypes } from "./components/TopBar";
 import XarrowWrapper, { XarrowWrapperType } from "./components/XarrowWrapper";
 import ModBoxWindow from "./windows/ModBoxWindow";
-import { useParams } from "react-router";
-import { proxyAddress, switchesType, portType } from "../../App";
+import { useParams, match } from "react-router";
+import { proxyAddress, switchesType, portDetailsType } from "../../App";
 import PortsBar from "./components/PortsBar";
 import TestComponent from "./components/TestComponent";
 import BounceLoader from "react-spinners/BounceLoader";
 import SwitchDetailsWindow from "./windows/SwitchDetailsWindow";
 import _ from "lodash";
 import { PortType } from "./components/Port";
-import { xarrowPropsType, refType } from "react-xarrows";
+import { xarrowPropsType } from "react-xarrows";
+import { fieldsNameType } from "./components/aclsFields";
+// import { matchFieldsType, actionsFieldsType } from "./components/aclsFields";
 
 // import MaterialIcon from "material-icons-react";
 
@@ -23,10 +25,10 @@ type CanvasContextType = {
   setPorts: React.Dispatch<
     React.SetStateAction<
       {
-        shape: string;
+        shape: "portBox";
         id: string;
         name: string;
-        port: portType;
+        port: portDetailsType;
         ref: any;
       }[]
     >
@@ -47,6 +49,7 @@ type CanvasContextType = {
   openModsWindowOfSelected: () => void;
   handleSelect: (e: any, box?: any) => void;
   toggleFlowVisibility: (flow: any) => void;
+  delFlow: (flow: switchSelfType["flowEntries"][number]) => void;
 };
 
 export const CanvasContext = createContext<CanvasContextType>(null);
@@ -60,6 +63,7 @@ const boxShapes = ["modBox"] as const;
 export type boxShapesType = typeof boxShapes[number];
 export type selectedType = BoxType | PortType | XarrowWrapperType;
 
+type t = "string" | "number";
 type flowEntryType = {
   actions: string[];
   byte_count: number;
@@ -70,7 +74,7 @@ type flowEntryType = {
   hard_timeout: number;
   idle_timeout: number;
   length: number;
-  match: { [key: string]: string | number };
+  match: { [key in fieldsNameType<"match">]?: string };
   packet_count: number;
   priority: number;
   table_id: number;
@@ -93,7 +97,7 @@ export type lineType = {
 const SwitchView = (props: { switches: switchesType }) => {
   // console.log(props.switches);
   const { dpid } = useParams<{ dpid: string }>();
-  const [switchSelf, setSwitchSelf] = useState<switchSelfType>({ ...props.switches[dpid], flowEntries: [] });
+  const [switchSelf, setSwitchSelf] = useState<switchSelfType>({ ...props.switches[dpid], flowEntries: [], dpid });
   const [ports, setPorts] = useState(
     switchSelf.ports.map((p) => ({
       shape: "portBox" as const,
@@ -103,6 +107,7 @@ const SwitchView = (props: { switches: switchesType }) => {
       ref: null,
     }))
   );
+  // console.log("switchSelf", switchSelf);
   const [dataFetched, setDataFetched] = useState(false);
 
   const [switchDetailsWindow, setSwitchDetailsWindow] = useState(false);
@@ -112,13 +117,43 @@ const SwitchView = (props: { switches: switchesType }) => {
       .then((result: { [dpid: string]: flowEntryType[] }) => {
         setDataFetched(true);
         setSwitchSelf({ ...switchSelf, flowEntries: result[dpid].map((f) => ({ details: f, visible: false })) });
+        console.log(result);
+        setBoxes(() => {
+          let newBoxes: BoxType[] = result[dpid].map((f, i) => {
+            return {
+              details: f,
+              visible: false,
+              id: JSON.stringify(f.match),
+              // id: "flow,
+              name: "flow" + i,
+              modData: {
+                match: f.match,
+                actions: f.actions
+                  .map((ac) => ac.split(":"))
+                  .reduce((acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }), {}),
+              },
+            };
+          });
+          return newBoxes;
+        });
       });
   }, []);
 
   const toggleFlowVisibility = useCallback(
-    (flow) => {
+    (flow: switchSelfType["flowEntries"][number]) => {
+      setBoxes((boxes) => {
+        const newBoxes = [...boxes];
+        let theNewBox = newBoxes[newBoxes.findIndex((b) => b.id === JSON.stringify(flow.details.match))];
+        theNewBox.visible = !theNewBox.visible;
+        return newBoxes;
+      });
       setSwitchSelf((switchSelf) => {
-        let newFlow = switchSelf.flowEntries.find((f) => _.isEqual(f, flow));
+        // let newFlow = switchSelf.flowEntries.find((f) => _.isEqual(f, flow));
+        console.log("switchSelf.flowEntries", switchSelf.flowEntries);
+        let newFlow = switchSelf.flowEntries.find((f) => {
+          console.log(f);
+          return JSON.stringify(f.details.match) === JSON.stringify(flow.details.match);
+        });
         newFlow.visible = !newFlow.visible;
         return { ...switchSelf };
       });
@@ -131,7 +166,7 @@ const SwitchView = (props: { switches: switchesType }) => {
   // const drawFlow = useCallback((flow) => {});
 
   const [boxes, setBoxes] = useState<BoxType[]>([
-    { id: "box1", x: 50, y: 50 },
+    // { id: "box1", x: 50, y: 50 },
     // { id: "box2", ...boxDefaultProps },
     // {
     //   id: "box1",
@@ -196,7 +231,7 @@ const SwitchView = (props: { switches: switchesType }) => {
       var newName = prompt("Enter box name: ", "box" + l);
       while (checkExistence(newName)) newName = prompt("name taken,choose other: ");
       if (newName) {
-        let newBox = { id: newName, x, y, shape };
+        let newBox: BoxType = { id: newName, x, y, shape, visible: true };
         setBoxes([...boxes, newBox]);
       }
     },
@@ -205,6 +240,7 @@ const SwitchView = (props: { switches: switchesType }) => {
 
   const handleDropBox = useCallback(
     (e) => {
+      // console.log("boxContainer on drop!");
       let shape = e.dataTransfer.getData("shape");
       if (boxShapes.includes(shape)) {
         let { x, y } = e.target.getBoundingClientRect();
@@ -274,6 +310,13 @@ const SwitchView = (props: { switches: switchesType }) => {
     [lines.length, selected]
   );
 
+  const removeBox = useCallback(
+    (boxId: string) => {
+      setBoxes((boxes) => boxes.filter((box) => !(box.id === boxId)));
+    },
+    [boxes.length, selected]
+  );
+
   const removeSelectedBox = useCallback(() => {
     if (window.confirm(`are you sure you want to delete ${selected.id}?`)) {
       // first remove any lines connected to the node.
@@ -324,8 +367,37 @@ const SwitchView = (props: { switches: switchesType }) => {
     );
   }, [selected]);
 
-  // const ca
-  //
+  const delFlow = useCallback(
+    (flow: switchSelfType["flowEntries"][number]) => {
+      console.log("delFLow!");
+      const parsedActions = flow.details.actions
+        .map((ac) => ac.split(":"))
+        .reduce((acu: any, cu: any) => acu.concat({ type: cu[0], port: cu[1] }), []);
+      const reqBody = { ...flow.details, dpid: Number(switchSelf.dpid), actions: parsedActions };
+      const requestOptions = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reqBody),
+      };
+      fetch(proxyAddress + "http://localhost:8080/stats/flowentry/delete", requestOptions).then((response) => {
+        if (response.status !== 200) alert(response.status);
+        else {
+          console.log("?");
+          setSwitchSelf((switchSelf) => {
+            const newSw = { ...switchSelf };
+            const i = newSw.flowEntries.findIndex((f) => _.isEqual(f, flow));
+            // delete newSw.flowEntries[i];
+            // newSw.flowEntries.splice(i, 1);
+            // newSw.flowEntries = newSw.flowEntries.filter((f) => !f.details.ma);
+            newSw.flowEntries = newSw.flowEntries.filter((f) => !_.isEqual(f, flow));
+            return newSw;
+          });
+          removeBox(JSON.stringify(flow.details.match));
+        }
+      });
+    },
+    [switchSelf]
+  );
 
   const canvasProps = useMemo(
     () => ({
@@ -346,6 +418,7 @@ const SwitchView = (props: { switches: switchesType }) => {
       openModsWindowOfSelected,
       handleSelect,
       toggleFlowVisibility,
+      delFlow,
     }),
     [
       setPorts,
@@ -365,9 +438,10 @@ const SwitchView = (props: { switches: switchesType }) => {
       openModsWindowOfSelected,
       handleSelect,
       toggleFlowVisibility,
+      delFlow,
     ]
   );
-  console.log("SwitchView rendered");
+  // console.log("SwitchView rendered");
 
   return (
     <div>
@@ -407,14 +481,17 @@ const SwitchView = (props: { switches: switchesType }) => {
               <div
                 id="boxesContainer"
                 className="boxesContainer"
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={(e) => {
+                  // let tmp = e.dataTransfer.getData("shape");
+                  // console.log("boxContainer onDragOver");
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
                 onDrop={handleDropBox}
               >
                 <TopBar />
 
-                {boxes.map((box) => (
-                  <Box key={box.id} {...({ box, boxes } as const)} />
-                ))}
+                {boxes.map((box) => (box.visible ? <Box key={box.id} {...({ box, boxes } as const)} /> : null))}
               </div>
               {/* <PortsBar ports={ports} portPolarity={"output"} /> */}
               <PortsBar {...{ ports, portPolarity: "output" }} />

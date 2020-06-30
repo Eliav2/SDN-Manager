@@ -8,7 +8,7 @@ import BounceLoader from "react-spinners/BounceLoader";
 export const proxyAddress = "http://localhost:9089/";
 // in production proxyAddress should be '' !
 
-export type portType = {
+export type portDetailsType = {
   advertised: number;
   config: number;
   curr: number;
@@ -24,8 +24,9 @@ export type portType = {
 
 export type switchesType = {
   [dpid: string]: {
-    ports: portType[];
+    ports: portDetailsType[];
     name: string;
+    dpid?: string;
   };
 };
 
@@ -35,7 +36,7 @@ const App = () => {
   const [connectFailed, setConnectFailed] = useState(false);
 
   useEffect(() => {
-    let switches: { [dpid: string]: portType[] } = {};
+    let switches: { [dpid: string]: portDetailsType[] } = {};
     fetch(proxyAddress + "http://localhost:8080/stats/switches")
       .then((res) => res.json())
       .then(

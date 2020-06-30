@@ -55,7 +55,6 @@ const TopBar = () => {
   var returnTopBarAppearance = () => {
     let allowedActions: actionsType[actionsKeysType] = [];
 
-    allowedActions.map(() => {});
     if (c.selected) {
       allowedActions = actions[c.selected.shape];
       if (c.selected.shape.includes("Box") && (c.selected as BoxType | PortType).id.includes(":<output>"))

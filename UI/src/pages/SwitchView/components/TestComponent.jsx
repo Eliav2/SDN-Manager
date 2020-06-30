@@ -1,9 +1,8 @@
-import React, { useContext } from "react";
-import { CanvasContext } from "../SwitchView";
+import React from "react";
 
 const TestComponent = (props) => {
   //   const c = useContext(CanvasContext);
-  console.log("!!!!!!!!!!!!!1TestComponent render!!!!!!!!!!!!");
+  // console.log("!!!!!!!!!!!!!1TestComponent render!!!!!!!!!!!!");
   return null;
 };
 

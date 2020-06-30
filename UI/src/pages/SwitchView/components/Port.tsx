@@ -1,17 +1,15 @@
 import React, { useState, useContext, useRef } from "react";
-// import "./Box.css";
-import Draggable from "react-draggable";
 import Popup from "reactjs-popup";
 import ConnectPointsWrapper from "./ConnectPointsWrapper";
 
 import { CanvasContext } from "../SwitchView";
-import { portType } from "../../../App";
+import { portDetailsType } from "../../../App";
 import { portPolarityType } from "./PortsBar";
 
 export type PortType = {
   id: string;
   name: string;
-  port: portType;
+  port: portDetailsType;
   ref: React.MutableRefObject<any>;
   shape: "portBox";
 };
@@ -22,6 +20,8 @@ const Port = ({ port, portPolarity }: { port: PortType; portPolarity: portPolari
   let background = c.chooseBoxBackground(port);
   port.ref = useRef();
 
+  type tmp = keyof portDetailsType;
+
   return (
     <div>
       <Popup
@@ -29,21 +29,21 @@ const Port = ({ port, portPolarity }: { port: PortType; portPolarity: portPolari
           <div
             ref={port.ref}
             className={`portBox hoverMarker`}
-            style={{ background, position: "relative" }}
+            style={{ background }}
             onClick={(e) => {
-              if (wasDragged == false) c.handleBoxClick(e, port);
+              if (wasDragged === false) c.handleBoxClick(e, port);
               setWasDragged(false);
             }}
             id={port.id}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
-              if (e.dataTransfer.getData("arrow") != port.id) {
+              if (e.dataTransfer.getData("arrow") !== port.id) {
                 if (portPolarity === "output")
                   c.addLine({ startBoxId: e.dataTransfer.getData("arrow"), endBoxId: port.id });
               }
             }}
           >
-            <ConnectPointsWrapper element={port} handlers={portPolarity == "input" ? ["right"] : []} />
+            <ConnectPointsWrapper element={port} handlers={portPolarity === "input" ? ["right"] : []} />
             <div>
               {port.name}
               <br />
@@ -61,7 +61,9 @@ const Port = ({ port, portPolarity }: { port: PortType; portPolarity: portPolari
         arrow={true}
       >
         <div>
-          {Object.keys(port.port).map((detail: keyof portType, i) => {
+          {(Object.keys(port.port) as Array<keyof portDetailsType>).map((detail, i) => {
+            detail = detail;
+            let s = detail;
             return (
               <div key={detail}>
                 {detail}: {port.port[detail]}
