@@ -60,7 +60,6 @@ const ConnectPoint = ({
             ...connectPointStyle,
             ...connectPointOffset[handler],
             ...position,
-            zIndex: 30,
           } as React.CSSProperties
         }
         draggable
@@ -93,7 +92,7 @@ const ConnectPoint = ({
           start={element.id}
           end={ref1}
           startAnchor={handler}
-          advanced={{ passProps: { divContainer: { style: { zIndex: 100, position: "absolute" } } } }}
+          advanced={{ passProps: { divContainer: { style: { zIndex: 1 } } } }}
         />
       ) : null}
     </React.Fragment>

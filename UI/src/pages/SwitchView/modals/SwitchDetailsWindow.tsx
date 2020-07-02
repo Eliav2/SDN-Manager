@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { CanvasContext, switchSelfType } from "../SwitchView";
 import Draggable from "react-draggable";
+import { Rnd } from "react-rnd";
 import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
 import EditOutlinedIcon from "@material-ui/icons/EditOutlined";
 import DeleteOutlineIcon from "@material-ui/icons/DeleteOutline";
@@ -26,6 +27,7 @@ const SwitchDetailsWindow = ({ setSwitchDetailsWindow, flowEntries = [] }: Switc
           <FlowDetails key={JSON.stringify(flowEntry.details.match)} {...{ flowEntry, i }}></FlowDetails>
         ))}
       </div>
+      {/* </Rnd> */}
     </Draggable>
   );
 };

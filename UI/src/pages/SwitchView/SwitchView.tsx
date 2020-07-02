@@ -4,17 +4,19 @@ import "./SwitchView.css";
 import Box, { BoxType } from "./components/Box";
 import TopBar, { actionsTypes } from "./components/TopBar";
 import XarrowWrapper, { XarrowWrapperType } from "./components/XarrowWrapper";
-import ModBoxWindow from "./windows/ModBoxWindow";
+import ModBoxWindow from "./modals/ModBoxWindow";
 import { useParams, match } from "react-router";
 import { proxyAddress, switchesType, portDetailsType } from "../../App";
 import PortsBar from "./components/PortsBar";
 import TestComponent from "./components/TestComponent";
 import BounceLoader from "react-spinners/BounceLoader";
-import SwitchDetailsWindow from "./windows/SwitchDetailsWindow";
+import SwitchDetailsWindow from "./modals/SwitchDetailsWindow";
 import _ from "lodash";
 import { PortType } from "./components/Port";
 import { xarrowPropsType } from "react-xarrows";
 import { fieldsNameType } from "./components/aclsFields";
+import ToolboxMenu from "./components/ToolboxMenu";
+import BoxesContainer from "./components/BoxesContainer";
 // import { matchFieldsType, actionsFieldsType } from "./components/aclsFields";
 
 // import MaterialIcon from "material-icons-react";
@@ -58,7 +60,7 @@ export const dndTypes = {
   toolBoxItem: "toolBoxItem",
 };
 
-const boxShapes = ["modBox"] as const;
+export const boxShapes = ["modBox"] as const;
 
 export type boxShapesType = typeof boxShapes[number];
 export type selectedType = BoxType | PortType | XarrowWrapperType;
@@ -113,11 +115,17 @@ const SwitchView = (props: { switches: switchesType }) => {
   const [switchDetailsWindow, setSwitchDetailsWindow] = useState(false);
   useEffect(() => {
     fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid)
-      .then((res) => res.json())
+      .then((res) => {
+        // console.log(res);
+        if (res.status !== 200) alert(res.status);
+        return res.json();
+        // if (res.status !== 200)
+        // else alert(res.status);
+      })
       .then((result: { [dpid: string]: flowEntryType[] }) => {
         setDataFetched(true);
         setSwitchSelf({ ...switchSelf, flowEntries: result[dpid].map((f) => ({ details: f, visible: false })) });
-        console.log(result);
+        // console.log(result);
         setBoxes(() => {
           let newBoxes: BoxType[] = result[dpid].map((f, i) => {
             return {
@@ -149,7 +157,7 @@ const SwitchView = (props: { switches: switchesType }) => {
       });
       setSwitchSelf((switchSelf) => {
         // let newFlow = switchSelf.flowEntries.find((f) => _.isEqual(f, flow));
-        console.log("switchSelf.flowEntries", switchSelf.flowEntries);
+        // console.log("switchSelf.flowEntries", switchSelf.flowEntries);
         let newFlow = switchSelf.flowEntries.find((f) => {
           console.log(f);
           return JSON.stringify(f.details.match) === JSON.stringify(flow.details.match);
@@ -166,7 +174,7 @@ const SwitchView = (props: { switches: switchesType }) => {
   // const drawFlow = useCallback((flow) => {});
 
   const [boxes, setBoxes] = useState<BoxType[]>([
-    // { id: "box1", x: 50, y: 50 },
+    // { id: "box1", menuWindowOpened: true, visible: true, x: 50, y: 50, shape: "modBox" },
     // { id: "box2", ...boxDefaultProps },
     // {
     //   id: "box1",
@@ -460,42 +468,12 @@ const SwitchView = (props: { switches: switchesType }) => {
               />
             </div>
             <div className="innerCanvas">
-              <div className="toolboxMenu">
-                <div className="toolboxTitle">Drag & drop me!</div>
-                <hr />
-                <div className="toolboxContainer">
-                  {boxShapes.map((shapeName) => (
-                    <div
-                      key={shapeName}
-                      className={shapeName + " grabble"}
-                      onDragStart={(e) => e.dataTransfer.setData("shape", shapeName)}
-                      draggable
-                    >
-                      {shapeName}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* <PortsBar ports={ports} portPolarity={"input"} /> */}
-              <PortsBar {...{ ports, portPolarity: "input" }} />
-              <div
-                id="boxesContainer"
-                className="boxesContainer"
-                onDragOver={(e) => {
-                  // let tmp = e.dataTransfer.getData("shape");
-                  // console.log("boxContainer onDragOver");
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                onDrop={handleDropBox}
-              >
-                <TopBar />
-
-                {boxes.map((box) => (box.visible ? <Box key={box.id} {...({ box, boxes } as const)} /> : null))}
-              </div>
-              {/* <PortsBar ports={ports} portPolarity={"output"} /> */}
+              <ToolboxMenu />
+              <PortsBar {...{ ports, portPolarity: "input", lines }} />
+              <BoxesContainer {...{ boxes, handleDropBox, lines }} />
               <PortsBar {...{ ports, portPolarity: "output" }} />
               {/* xarrow connections*/}
+
               {lines.map((line, i) => (
                 <XarrowWrapper key={line.props.start + "-" + line.props.end + i} {...{ line, selected }} />
               ))}

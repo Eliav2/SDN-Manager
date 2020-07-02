@@ -1,4 +1,5 @@
 import React, { useContext, useRef, useState } from "react";
+// import Draggable, { DraggableEvent, DraggableData } from "react-draggable";
 import Draggable, { DraggableEvent, DraggableData } from "react-draggable";
 import { CanvasContext, constants } from "../SwitchView";
 import ConnectPointsWrapper from "./ConnectPointsWrapper";
@@ -64,8 +65,8 @@ const Box = (props: { box: BoxType; boxes: BoxType[] }) => {
     >
       <div
         ref={box.ref}
-        className={`${box.shape} absolute hoverMarker`}
-        style={{ background }}
+        className={`${box.shape} hoverMarker absolute`}
+        style={{ background, zIndex: 2 }}
         onClick={(e) => {
           if (wasDragged === false) c.handleBoxClick(e, box);
           setWasDragged(false);

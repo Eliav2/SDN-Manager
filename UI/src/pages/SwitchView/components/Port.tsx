@@ -1,8 +1,9 @@
 import React, { useState, useContext, useRef } from "react";
 import Popup from "reactjs-popup";
 import ConnectPointsWrapper from "./ConnectPointsWrapper";
-
-import { CanvasContext } from "../SwitchView";
+import XarrowWrapper from "./XarrowWrapper";
+import AttachXarrow from "./AttachXarrow";
+import { CanvasContext, lineType } from "../SwitchView";
 import { portDetailsType } from "../../../App";
 import { portPolarityType } from "./PortsBar";
 
@@ -14,7 +15,7 @@ export type PortType = {
   shape: "portBox";
 };
 
-const Port = ({ port, portPolarity }: { port: PortType; portPolarity: portPolarityType }) => {
+const Port = ({ port, portPolarity, lines }: { port: PortType; portPolarity: portPolarityType; lines: lineType[] }) => {
   const c = useContext(CanvasContext);
   const [wasDragged, setWasDragged] = useState(false);
   let background = c.chooseBoxBackground(port);
@@ -26,6 +27,8 @@ const Port = ({ port, portPolarity }: { port: PortType; portPolarity: portPolari
     <div>
       <Popup
         trigger={
+          // <AttachXarrow>
+
           <div
             ref={port.ref}
             className={`portBox hoverMarker`}
@@ -51,6 +54,7 @@ const Port = ({ port, portPolarity }: { port: PortType; portPolarity: portPolari
               <br />({port.port.port_no})
             </div>
           </div>
+          // {/* </AttachXarrow> */}
         }
         position="left center"
         on="hover"
@@ -71,6 +75,11 @@ const Port = ({ port, portPolarity }: { port: PortType; portPolarity: portPolari
               </div>
             );
           })}
+          {/* {lines
+            .filter((line) => line.props.start === port.id)
+            .map((line, i) => (
+              <XarrowWrapper key={line.props.start + "-" + line.props.end + i} {...{ line, selected: c.selected }} />
+            ))} */}
         </div>
       </Popup>
     </div>
