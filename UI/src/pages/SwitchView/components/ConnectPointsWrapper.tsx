@@ -60,6 +60,7 @@ const ConnectPoint = ({
             ...connectPointStyle,
             ...connectPointOffset[handler],
             ...position,
+            zIndex: 1,
           } as React.CSSProperties
         }
         draggable

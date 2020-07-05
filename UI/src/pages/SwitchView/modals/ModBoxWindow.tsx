@@ -24,8 +24,7 @@ const ModBoxWindow = ({ box: boxProp }: { box: BoxType }) => {
 
   const modDetails = { match: { ...matchDetails }, actions: { ...actionsDetails } };
 
-  // const [modDetailsBackup, setModDetailsBackup] = useState({ ...modDetails });
-
+  
   const handleSaveChanges = () => {
     console.log("handleSaveChanges");
     // setModDetailsBackup(modDetails);
@@ -36,7 +35,8 @@ const ModBoxWindow = ({ box: boxProp }: { box: BoxType }) => {
       return newBoxes;
     });
   };
-
+  
+  // const [modDetailsBackup, setModDetailsBackup] = useState({ ...modDetails });
   // const handleRestoreChanges = () => {
   //   setActionsDetails(modDetailsBackup.actions);
   //   setMatchDetails(modDetailsBackup.match);

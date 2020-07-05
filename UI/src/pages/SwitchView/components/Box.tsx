@@ -66,7 +66,7 @@ const Box = (props: { box: BoxType; boxes: BoxType[] }) => {
       <div
         ref={box.ref}
         className={`${box.shape} hoverMarker absolute`}
-        style={{ background, zIndex: 2 }}
+        style={{ background }}
         onClick={(e) => {
           if (wasDragged === false) c.handleBoxClick(e, box);
           setWasDragged(false);
