@@ -37,7 +37,7 @@ const Box = (props: { box: BoxType; boxes: BoxType[] }) => {
     let i = boxes.findIndex((b) => b.id === id);
     newBoxes[i].x = data.lastX;
     newBoxes[i].y = data.lastY;
-    c.setBoxes(newBoxes);
+    c.updateBox(newBoxes[i]);
   };
 
   let background = c.chooseBoxBackground(box);

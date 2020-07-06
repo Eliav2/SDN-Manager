@@ -5,9 +5,10 @@ import KeyboardArrowUpOutlinedIcon from "@material-ui/icons/KeyboardArrowUpOutli
 import { CanvasContext } from "../SwitchView";
 import { PortType } from "./Port";
 import { BoxType } from "./Box";
+import { Container } from "@material-ui/core";
 
 const actions = {
-  modBox: ["Edit Mods", "Add Connections", "Remove Connections", "Delete"],
+  modBox: ["Edit Mods", "Add Connections", "Remove Connections", "Hide", "Delete"],
   portBox: ["Add Connections", "Remove Connections"],
   portBoxOut: [],
   arrow: ["Remove Connection"],
@@ -43,6 +44,10 @@ const TopBar = () => {
         break;
       case "Edit Mods":
         c.openModsWindowOfSelected();
+        break;
+      case "Hide":
+        console.log("asdasdasdas");
+        c.toggleFlowVisibilityOfSelected();
         break;
       case "Delete":
         c.removeSelectedBox();

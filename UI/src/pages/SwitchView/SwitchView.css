@@ -45,7 +45,8 @@
 .boxesContainer {
   position: relative;
   height: 100%;
-  width: calc(var(--canvasWidthVw) - var(--portsBarWidthPx) * 2);
+  width: 100%;
+  /* width: calc(var(--canvasWidthVw) - var(--portsBarWidthPx) * 2); */
   border: solid black 1px;
 }
 
@@ -67,7 +68,8 @@
 .innerCanvas {
   display: flex;
   position: relative;
-  width: var(--canvasWidthVw);
+  width: 100%;
+  /* width: var(--canvasWidthVw); */
   height: var(--canvasHeightVh);
   background: white;
 }

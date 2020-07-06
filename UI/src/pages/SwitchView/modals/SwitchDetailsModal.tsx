@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { CanvasContext, switchSelfType } from "../SwitchView";
+import { CanvasContext, switchSelfType, flowEntryType } from "../SwitchView";
 import Draggable from "react-draggable";
 import { Rnd } from "react-rnd";
 import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
@@ -23,9 +23,11 @@ const SwitchDetailsWindow = ({ setSwitchDetailsWindow, flowEntries = [] }: Switc
         />
         <div className={"header"}>{`Flow Entries`}</div>
         <hr style={{ width: "90%" }} />
-        {flowEntries.map((flowEntry, i) => (
-          <FlowDetails key={JSON.stringify(flowEntry.details.match)} {...{ flowEntry, i }}></FlowDetails>
-        ))}
+        {flowEntries.map((flowEntry, i) =>
+          flowEntry.isSynced ? (
+            <FlowDetails key={JSON.stringify(flowEntry.details.match)} {...{ flowEntry, i }}></FlowDetails>
+          ) : null
+        )}
       </div>
       {/* </Rnd> */}
     </Draggable>
@@ -34,14 +36,14 @@ const SwitchDetailsWindow = ({ setSwitchDetailsWindow, flowEntries = [] }: Switc
 
 type FlowDetailsProps = {
   i: number;
-  flowEntry: switchSelfType["flowEntries"][number];
+  flowEntry: flowEntryType;
 };
 
 const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
   const c = useContext(CanvasContext);
   const { details } = flowEntry;
   // details.
-  const background = flowEntry.visible ? "LemonChiffon" : undefined;
+  const background = flowEntry.box.visible ? "LemonChiffon" : undefined;
 
   return (
     <div
@@ -49,7 +51,7 @@ const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
       style={{ background }}
       onClick={() => c.toggleFlowVisibility(flowEntry)}
     >
-      <div style={{ width: 20 }}>{i}:</div>
+      <div style={{ width: 20 }}>{flowEntry.box.name}:</div>
       <div style={{ flex: 0.9 }}>
         {
           <ul>
@@ -68,12 +70,13 @@ const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
         className={`button`}
         onClick={(e) => {
           e.stopPropagation();
-          c.setBoxes((boxes) => {
-            const newBoxes = [...boxes];
-            const newBox = newBoxes.find((b) => b.id === JSON.stringify(flowEntry.details.match));
-            newBox.menuWindowOpened = !newBox.menuWindowOpened;
-            return newBoxes;
-          });
+          c.updateBox({ ...flowEntry.box, menuWindowOpened: !flowEntry.box.menuWindowOpened });
+          // c.setBoxes((boxes) => {
+          //   const newBoxes = [...boxes];
+          //   const newBox = newBoxes.find((b) => b.id === JSON.stringify(flowEntry.details.match));
+          //   newBox.menuWindowOpened = !newBox.menuWindowOpened;
+          //   return newBoxes;
+          // });
         }}
       />
       <DeleteOutlineIcon
@@ -81,7 +84,7 @@ const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
         className="button"
         onClick={(e) => {
           e.stopPropagation();
-          c.delFlow(flowEntry);
+          c.delFlowFromServer(flowEntry);
         }}
       />
     </div>

@@ -4,6 +4,7 @@ import SwitchView from "./pages/SwitchView/SwitchView";
 import SwitchesPage from "./pages/switches/SwitchesPage";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import BounceLoader from "react-spinners/BounceLoader";
+import { Container } from "@material-ui/core";
 
 export const proxyAddress = "http://localhost:9089/";
 // in production proxyAddress should be '' !
@@ -74,7 +75,7 @@ const App = () => {
   }, []);
 
   return (
-    <div>
+    <Container maxWidth="lg">
       <header className="mainTitle">SDN Manager</header>
       <hr />
       {dataFetched ? (
@@ -85,6 +86,11 @@ const App = () => {
             </Route>
             <Route path="/switch/:dpid">
               <SwitchView switches={switches} />
+            </Route>
+            <Route path="*">
+              <div className="mainWindow">
+                <h3>404 Not Found</h3>
+              </div>
             </Route>
           </Switch>
         </Router>
@@ -104,7 +110,8 @@ const App = () => {
           )}
         </div>
       )}
-    </div>
+      <div style={{ marginTop: 30 }}></div>
+    </Container>
   );
 };
 

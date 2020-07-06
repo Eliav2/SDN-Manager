@@ -7,35 +7,39 @@ import TextField from "@material-ui/core/TextField";
 import AddOutlinedIcon from "@material-ui/icons/AddOutlined";
 import DeleteOutlinedIcon from "@material-ui/icons/DeleteOutlined";
 import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
+import CheckIcon from "@material-ui/icons/Check";
 import SaveIcon from "@material-ui/icons/Save";
 import SettingsBackupRestoreIcon from "@material-ui/icons/SettingsBackupRestore";
 import Popup from "reactjs-popup";
 import { matchFields, actionsFields } from "../components/aclsFields";
-import { CanvasContext } from "../SwitchView";
+import { CanvasContext, flowEntryType, flowEntryDetailsType } from "../SwitchView";
 import { BoxType } from "../components/Box";
-import { isEqual } from "lodash";
+import { isEqual, flow } from "lodash";
 
-const ModBoxWindow = ({ box: boxProp }: { box: BoxType }) => {
+const ModBoxWindow = ({ flow }: { flow: flowEntryType }) => {
   const c = useContext(CanvasContext);
-  if (!boxProp.modData) boxProp.modData = { match: {}, actions: {} };
+  if (!flow.box.modData) flow.box.modData = { match: {}, actions: {} };
 
-  const [matchDetails, setMatchDetails] = useState({ ...boxProp.modData.match });
-  const [actionsDetails, setActionsDetails] = useState({ ...boxProp.modData.actions });
+  const [matchDetails, setMatchDetails] = useState({ ...flow.box.modData.match });
+  const [actionsDetails, setActionsDetails] = useState({ ...flow.box.modData.actions });
 
   const modDetails = { match: { ...matchDetails }, actions: { ...actionsDetails } };
 
-  
   const handleSaveChanges = () => {
-    console.log("handleSaveChanges");
+    // console.log("handleSaveChanges");
+    // let newBox = boxProp;
+    // newBox.modData = modDetails;
+    c.updateBox({ ...flow.box, modData: modDetails });
     // setModDetailsBackup(modDetails);
-    c.setBoxes((boxes) => {
-      const newBoxes = [...boxes];
-      let newBox = newBoxes.find((box) => box.id === boxProp.id);
-      newBox.modData = modDetails;
-      return newBoxes;
-    });
+    // c.switchSelf
+    // c.setBoxes((boxes) => {
+    //   const newBoxes = [...boxes];
+    //   let newBox = newBoxes.find((box) => box.id === boxProp.id);
+    //   newBox.modData = modDetails;
+    //   return newBoxes;
+    // });
   };
-  
+
   // const [modDetailsBackup, setModDetailsBackup] = useState({ ...modDetails });
   // const handleRestoreChanges = () => {
   //   setActionsDetails(modDetailsBackup.actions);
@@ -43,25 +47,33 @@ const ModBoxWindow = ({ box: boxProp }: { box: BoxType }) => {
   // };
 
   const handleClose = () => {
-    c.setBoxes((boxes) =>
-      boxes.map((box) =>
-        box.id === boxProp.id
-          ? {
-              ...box,
-              menuWindowOpened: false,
-            }
-          : box
-      )
-    );
+    c.updateBox({ ...flow.box, menuWindowOpened: false });
+    // c.setBoxes((boxes) =>
+    //   boxes.map((box) =>
+    //     box.id === boxProp.id
+    //       ? {
+    //           ...box,
+    //           menuWindowOpened: false,
+    //         }
+    //       : box
+    //   )
+    // );
   };
 
-  console.log("ModBoxWindow render");
+  const handleConfirmFlow = () => {
+    //here we should add this flow to the the vSwitch
+    console.log("handleConfirmFlow");
+    // const flow:flowEntryDetailsType = {match:matchDetails, actions: actionsDetails,priority:1}
+    c.addFlowToServer(flow, modDetails, handleSaveChanges);
+  };
+
+  console.log("ModBoxWindow render", flow);
 
   return (
-    <Draggable enableUserSelectHack={false} defaultPosition={{ x: boxProp.x, y: boxProp.y - 100 }}>
+    <Draggable enableUserSelectHack={false} defaultPosition={{ x: flow.box.x, y: flow.box.y - 100 }}>
       <div className="menuWindowContainer" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignSelf: "flex-end" }}>
-          {isEqual(modDetails, boxProp.modData) === false ? (
+          {isEqual(modDetails, flow.box.modData) === false && flow.isSynced ? (
             <>
               <SaveIcon
                 titleAccess="Update changes of this flow entry on the vSwitch"
@@ -85,9 +97,17 @@ const ModBoxWindow = ({ box: boxProp }: { box: BoxType }) => {
             onClick={handleClose}
             titleAccess="Close"
           />
+          {flow.isSynced ? null : (
+            <CheckIcon
+              fontSize={"large"}
+              className="button closeButton"
+              onClick={handleConfirmFlow}
+              titleAccess="Confirm new flow"
+            />
+          )}
         </div>
 
-        <div className={"header"}>{`${boxProp.name}`}</div>
+        <div className={"header"}>{`${flow.box.name}`}</div>
         <hr style={{ width: "90%" }} />
         <div className="propsContainer">
           <SectionMenu sectionName="match" fields={matchFields} details={matchDetails} setDetails={setMatchDetails} />
