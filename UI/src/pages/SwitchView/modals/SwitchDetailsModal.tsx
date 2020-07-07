@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useRef } from "react";
 import { CanvasContext, switchSelfType, flowEntryType } from "../SwitchView";
 import Draggable from "react-draggable";
 import { Rnd } from "react-rnd";
@@ -29,6 +29,12 @@ const SwitchDetailsModal = ({ setSwitchDetailsWindow, flowEntries = [] }: Switch
             <FlowDetails key={JSON.stringify(flowEntry.details.match)} {...{ flowEntry, i }}></FlowDetails>
           ) : null
         )}
+        {/* <h3>unconfirmed flows</h3>
+        {flowEntries.map((flowEntry, i) =>
+          flowEntry.isSynced ? null : (
+            <FlowDetails key={JSON.stringify(flowEntry.details.match)} {...{ flowEntry, i }}></FlowDetails>
+          )
+        )} */}
       </div>
       {/* </Rnd> */}
     </Draggable>
@@ -48,6 +54,7 @@ const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
 
   return (
     <Tooltip
+      arrow
       enterDelay={800}
       title={Object.keys(details)
         .filter((k) => k !== "actions" && k !== "match")
@@ -82,7 +89,7 @@ const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
           className={`button`}
           onClick={(e) => {
             e.stopPropagation();
-            c.updateBox({ ...flowEntry.box, menuWindowOpened: !flowEntry.box.menuWindowOpened });
+            c.updateBoxOnUi({ ...flowEntry.box, flowDetailsModalOpen: !flowEntry.box.flowDetailsModalOpen });
             // c.setBoxes((boxes) => {
             //   const newBoxes = [...boxes];
             //   const newBox = newBoxes.find((b) => b.id === JSON.stringify(flowEntry.details.match));
@@ -96,7 +103,7 @@ const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
           className="button"
           onClick={(e) => {
             e.stopPropagation();
-            c.delFlowFromServer(flowEntry);
+            c.delFlow(flowEntry);
           }}
         />
       </div>

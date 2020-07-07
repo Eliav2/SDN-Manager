@@ -12,10 +12,10 @@ export type XarrowWrapperType = {
   shape?: "arrow";
 };
 
-const XarrowWrapper = ({ line: { props } }: { line: lineType; selected: selectedType }) => {
+const XarrowWrapper = ({ line }: { line: lineType }) => {
   const c = useContext(CanvasContext);
 
-  const [state, setState] = useState({ color: props.color });
+  const [state, setState] = useState({ color: line.color });
   // console.log(props);
   // console.log("Xarrow renderd");
 
@@ -23,11 +23,11 @@ const XarrowWrapper = ({ line: { props } }: { line: lineType; selected: selected
     consoleWarning: false,
     passProps: {
       onMouseEnter: () => setState({ color: "IndianRed" }),
-      onMouseLeave: () => setState({ color: props.color }),
+      onMouseLeave: () => setState({ color: line.color }),
       onClick: (e) => {
         e.stopPropagation(); //so only the click event on the arrow will fire on not on the conainer itself
         c.setSelected({
-          id: { start: props.start as string, end: props.end as string },
+          id: { start: line.start as string, end: line.end as string },
           shape: "arrow",
         });
         c.setActionState("Normal");
@@ -36,17 +36,17 @@ const XarrowWrapper = ({ line: { props } }: { line: lineType; selected: selected
     },
   };
   let color = state.color;
-  let startAnchor = (props.start as string).includes(":<input>") ? ("right" as const) : ("auto" as const);
-  let endAnchor = (props.end as string).includes(":<output>") ? ("left" as const) : ("auto" as const);
+  let startAnchor = (line.start as string).includes(":<input>") ? ("right" as const) : ("auto" as const);
+  let endAnchor = (line.end as string).includes(":<output>") ? ("left" as const) : ("auto" as const);
   if (
     c.selected &&
     c.selected.shape === "arrow" &&
-    c.selected.id.start === props.start &&
-    c.selected.id.end === props.end
+    c.selected.id.start === line.start &&
+    c.selected.id.end === line.end
   ) {
     color = "red";
   }
-  return <Xarrow startAnchor={startAnchor} endAnchor={endAnchor} {...{ ...defProps, ...props, ...state, color }} />;
+  return <Xarrow startAnchor={startAnchor} endAnchor={endAnchor} {...{ ...defProps, ...line, ...state, color }} />;
 };
 
 export default React.memo(XarrowWrapper, () => false);

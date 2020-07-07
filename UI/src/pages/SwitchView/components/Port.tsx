@@ -22,11 +22,11 @@ const Port = ({ port, portPolarity, lines }: { port: PortType; portPolarity: por
   let background = c.chooseBoxBackground(port);
   port.ref = useRef();
 
-  type tmp = keyof portDetailsType;
-
   return (
     <div>
       <Tooltip
+        interactive
+        arrow
         enterDelay={800}
         title={(Object.keys(port.port) as Array<keyof portDetailsType>).map((detail, i) => {
           return (

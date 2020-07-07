@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect, useRef, useImperativeHandle } from "react";
 import Draggable from "react-draggable";
 // import MaterialIcon from "material-icons-react";
 import TextField from "@material-ui/core/TextField";
@@ -15,12 +15,33 @@ import { CanvasContext, flowEntryType, flowEntryDetailsType } from "../SwitchVie
 import { BoxType } from "../components/Box";
 import { isEqual } from "lodash";
 
+// const useStateWithCallback = (initialState, callback?) => {
+//   const [state, setState] = useState(initialState);
+
+//   useEffect(() => (callback ? callback(state) : null), [state, callback]);
+
+//   return [state, setState];
+// };
+
 const BoxDetailsModal = ({ flow }: { flow: flowEntryType }) => {
   const c = useContext(CanvasContext);
   // if (!flow.details) flow.details = { match: {}, actions: {}, priority: 1 };
 
   const [matchDetails, setMatchDetails] = useState({ ...flow.details.match });
   const [actionsDetails, setActionsDetails] = useState({ ...flow.details.actions });
+
+  // const selfRef = useRef(null);
+
+  // React.createRef();
+  // flow.box.flowDetailsModalRef = fref;
+  // useEffect(() => {
+  //   flow.box.flowDetailsModalRef = useRef();
+  // }, []);
+
+  // useImperativeHandle(fref, () => ({
+  //   handleSaveChanges,
+  //   flow,
+  // }));
 
   const modDetails: flowEntryDetailsType = {
     match: { ...matchDetails },
@@ -31,14 +52,20 @@ const BoxDetailsModal = ({ flow }: { flow: flowEntryType }) => {
   const handleSaveChanges = (flowDetails?: flowEntryDetailsType) => {
     // const newBox = { ...flow.box, modData: modDetails }
     // c.updateFlowOnServer(modDetails,()=> c.updateBox({ ...flow.box, modData: modDetails }));
-    const updatedFlow = { ...flow, details: flowDetails ? flowDetails : modDetails, isSynced: true };
-    c.updateFlowOnServer(updatedFlow.details, () => c.updateFlow(updatedFlow));
+    const updatedFlow: flowEntryType = {
+      ...flow,
+      details: flowDetails ? flowDetails : modDetails,
+      isSynced: true,
+      box: { ...flow.box, flowDetailsModalOpen: false },
+    };
+    // c.updateFlowOnServer(updatedFlow.details, () => c.updateFlow(updatedFlow));
+    c.updateFlowOnServer(updatedFlow);
 
     // c.updateBox({ ...flow.box });
   };
 
   const handleClose = () => {
-    c.updateBox({ ...flow.box, menuWindowOpened: false });
+    c.updateBoxOnUi({ ...flow.box, flowDetailsModalOpen: false });
   };
 
   const handleConfirmFlow = () => {
@@ -47,8 +74,7 @@ const BoxDetailsModal = ({ flow }: { flow: flowEntryType }) => {
     // c.addFlowToServer({ ...flow, details: modDetails });
     c.addFlowToServer({ ...flow, details: modDetails }, (flowDetails) => handleSaveChanges(flowDetails));
   };
-
-  // console.log("ModBoxWindow render", flow);
+  // console.log("ModBoxWindow render", flow.details, { ...flow.details, ...modDetails });
 
   return (
     <Draggable enableUserSelectHack={false} defaultPosition={{ x: flow.box.x, y: flow.box.y - 100 }}>
@@ -128,6 +154,8 @@ const SectionMenu = <SecName extends sectionNameType>({
   const handleAddField = (key: fieldName) => {
     setDetails({ ...Object.assign(details, { [key]: "" }) });
   };
+
+  useEffect(() => {}, [details]);
 
   const handleDelField = (key: fieldName) => {
     setDetails((details) => {

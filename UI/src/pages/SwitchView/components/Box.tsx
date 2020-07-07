@@ -17,17 +17,13 @@ export type BoxType = {
   clientX?: number;
   clientY?: number;
   name?: string;
-  menuWindowOpened?: boolean;
-  // modData?: {
-  //   // match?: {typeof matchFields[number][0]:typeof matchFields[number][3]};
-  //   match?: { [key in fieldsNameType<"match">]?: string };
-  //   actions?: { [key in fieldsNameType<"actions">]?: string };
-  //   priority?: number;
-  // };
+  flowDetailsModalOpen?: boolean;
   visible?: boolean;
 };
 
 const Box = (props: { box: BoxType; boxes: BoxType[] }) => {
+  // console.log(props.box);
+
   const c = useContext(CanvasContext);
   const { boxes, box } = props;
   const [wasDragged, setWasDragged] = useState(false);
@@ -40,7 +36,7 @@ const Box = (props: { box: BoxType; boxes: BoxType[] }) => {
     let i = boxes.findIndex((b) => b.id === id);
     newBoxes[i].x = data.lastX;
     newBoxes[i].y = data.lastY;
-    c.updateBox(newBoxes[i]);
+    c.updateBoxOnUi(newBoxes[i]);
   };
 
   let background = c.chooseBoxBackground(box);
@@ -53,7 +49,7 @@ const Box = (props: { box: BoxType; boxes: BoxType[] }) => {
     box.clientY = y;
   }
   // console.log("box render");
-  if (!box.name) box.name = box.id;
+  if (box.name == null) box.name = box.id;
 
   return (
     <Draggable
