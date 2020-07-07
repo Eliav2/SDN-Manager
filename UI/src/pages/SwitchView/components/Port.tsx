@@ -8,15 +8,6 @@ import { portDetailsType } from "../../../App";
 import { portPolarityType } from "./PortsBar";
 import Tooltip from "@material-ui/core/Tooltip";
 
-// const LightTooltip = withStyles((theme) => ({
-//   tooltip: {
-//     backgroundColor: theme.palette.common.white,
-//     color: 'rgba(0, 0, 0, 0.87)',
-//     boxShadow: theme.shadows[1],
-//     fontSize: 11,
-//   },
-// }))(Tooltip);
-
 export type PortType = {
   id: string;
   name: string;
@@ -38,8 +29,6 @@ const Port = ({ port, portPolarity, lines }: { port: PortType; portPolarity: por
       <Tooltip
         enterDelay={800}
         title={(Object.keys(port.port) as Array<keyof portDetailsType>).map((detail, i) => {
-          detail = detail;
-          let s = detail;
           return (
             <div key={detail} style={{ fontSize: 13, marginBottom: 2 }}>
               {detail}: {port.port[detail]}

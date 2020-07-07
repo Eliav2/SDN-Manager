@@ -10,7 +10,7 @@ import { proxyAddress, switchesType, portDetailsType } from "../../App";
 import PortsBar from "./components/PortsBar";
 import TestComponent from "./components/TestComponent";
 import BounceLoader from "react-spinners/BounceLoader";
-import SwitchDetailsWindow from "./modals/SwitchDetailsModal";
+import SwitchDetailsModal from "./modals/SwitchDetailsModal";
 import _ from "lodash";
 import { PortType } from "./components/Port";
 import { xarrowPropsType } from "react-xarrows";
@@ -54,43 +54,22 @@ type CanvasContextType = {
   handleSelect: (e: any, box?: any) => void;
   toggleFlowVisibility: (flow: any) => void;
   toggleFlowVisibilityOfSelected: () => void;
-  delFlowFromServer: (flow: flowEntryType) => void;
-  addFlowToServer: (
-    flow: flowEntryType,
-    modDetails: flowEntryType["box"]["modData"] & Omit<Partial<flowEntryDetailsType>, "actions">,
-    callback?: () => void
-  ) => void;
+  delFlowFromServer: (flow: flowEntryType, callback?: () => void) => void;
+  addFlowToServer: (flow: flowEntryType, callback?: (updatedFlowDetails: flowEntryDetailsType) => void) => void;
+  updateFlowOnServer: (updatedFlow: flowEntryDetailsType, callback?: () => void) => void;
+  updateFlowName: (flowId: string, newName: string) => void;
 };
 
 export const CanvasContext = createContext<CanvasContextType>(null);
 export const constants = { draggingGrid: [1, 1] };
-export const dndTypes = {
-  toolBoxItem: "toolBoxItem",
-};
 
 export const boxShapes = ["modBox"] as const;
 
 export type boxShapesType = typeof boxShapes[number];
 export type selectedType = BoxType | PortType | XarrowWrapperType;
 
-export type flowEntryDetailsType = {
-  actions: string[];
-  byte_count: number;
-  cookie: number;
-  duration_nsec: number;
-  duration_sec: number;
-  flags: number;
-  hard_timeout: number;
-  idle_timeout: number;
-  length: number;
-  match: { [key in fieldsNameType<"match">]?: string };
-  packet_count: number;
-  priority: number;
-  table_id: number;
-};
-
-export type flowEntryDetailsUpdateType = {
-  dpid: number;
+export type serverSetFlowType = {
+  dpid?: number;
   actions: { type: fieldsNameType<"actions">; port: number }[];
   byte_count?: number;
   cookie?: number;
@@ -106,8 +85,72 @@ export type flowEntryDetailsUpdateType = {
   table_id?: number;
 };
 
+export type serverGetFlowType = {
+  actions: string[];
+  byte_count?: number;
+  cookie?: number;
+  duration_nsec?: number;
+  duration_sec?: number;
+  flags?: number;
+  hard_timeout?: number;
+  idle_timeout?: number;
+  length?: number;
+  match: { [key in fieldsNameType<"match">]?: string };
+  packet_count?: number;
+  priority: number;
+  table_id?: number;
+};
+
+// export type flowEntryDetailsUIType = {
+//   match: { [key in fieldsNameType<"match">]?: string };
+//   actions: { [key in fieldsNameType<"actions">]?: string };
+//   byte_count?: number;
+//   cookie?: number;
+//   duration_nsec?: number;
+//   duration_sec?: number;
+//   flags?: number;
+//   hard_timeout?: number;
+//   idle_timeout?: number;
+//   length?: number;
+//   packet_count?: number;
+//   priority: number;
+//   table_id?: number;
+// };
+
+export type flowEntryDetailsGetType = {
+  match: { [key in fieldsNameType<"match">]?: string };
+  actions: string[];
+  byte_count?: number;
+  cookie?: number;
+  duration_nsec?: number;
+  duration_sec?: number;
+  flags?: number;
+  hard_timeout?: number;
+  idle_timeout?: number;
+  length?: number;
+  packet_count?: number;
+  priority: number;
+  table_id?: number;
+};
+
+export type flowEntryDetailsType = {
+  match?: { [key in fieldsNameType<"match">]?: string };
+  actions?: { [key in fieldsNameType<"actions">]?: string };
+  byte_count?: number;
+  cookie?: number;
+  duration_nsec?: number;
+  duration_sec?: number;
+  flags?: number;
+  hard_timeout?: number;
+  idle_timeout?: number;
+  length?: number;
+  packet_count?: number;
+  priority?: number;
+  table_id?: number;
+};
+
 export type flowEntryType = {
-  details: Partial<flowEntryDetailsType>;
+  details: flowEntryDetailsType;
   // visible: boolean;
   box: BoxType;
   isSynced: boolean;
@@ -148,73 +191,38 @@ const SwitchView = (props: { switches: switchesType }) => {
         // console.log(res);
         if (res.status !== 200) alert(res.status);
         return res.json();
-        // if (res.status !== 200)
-        // else alert(res.status);
       })
-      .then((result: { [dpid: string]: flowEntryDetailsType[] }) => {
+      .then((result: { [dpid: string]: flowEntryDetailsGetType[] }) => {
         console.log(result);
-        setDataFetched(true);
+        const parsedActions = setDataFetched(true);
         setSwitchSelf({
           ...switchSelf,
           flowEntries: result[dpid].map((f, i) => ({
-            details: f,
+            details: {
+              ...f,
+              actions: convertActionsFromServerGet2UI(f.actions), // parse actions because server return different format then state in UI
+            },
             visible: false,
             isSynced: true,
             box: {
               x: 50,
               y: 100,
-              details: f,
               visible: false,
               id: JSON.stringify(f.match),
               name: "flow" + i,
-              modData: {
-                match: f.match,
-                actions: f.actions
-                  .map((ac) => ac.split(":"))
-                  .reduce((acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }), {}),
-              },
             },
           })),
         });
-        // console.log(result);
-        // setBoxes(() => {
-        //   let newBoxes: BoxType[] = result[dpid].map((f, i) => {
-        //     return {
-        //       details: f,
-        //       visible: false,
-        //       id: JSON.stringify(f.match),
-        //       // id: "flow,
-        //       name: "flow" + i,
-        //       modData: {
-        //         match: f.match,
-        //         actions: f.actions
-        //           .map((ac) => ac.split(":"))
-        //           .reduce((acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }), {}),
-        //       },
-        //     };
-        //   });
-        //   return newBoxes;
-        // });
       });
   }, []);
 
   const toggleFlowVisibility = useCallback(
     (flow: flowEntryType) => {
-      // setBoxes((boxes) => {
-      //   const newBoxes = [...boxes];
-      //   let theNewBox = newBoxes[newBoxes.findIndex((b) => b.id === JSON.stringify(flow.details.match))];
-      //   theNewBox.visible = !theNewBox.visible;
-      //   return newBoxes;
-      // });
       setSwitchSelf((switchSelf) => {
-        // let newFlow = switchSelf.flowEntries.find((f) => _.isEqual(f, flow));
-        // console.log("switchSelf.flowEntries", switchSelf.flowEntries);
         let newFlow = switchSelf.flowEntries.find((f) => {
-          // console.log(f);
           return JSON.stringify(f.details.match) === JSON.stringify(flow.details.match);
         });
         newFlow.box.visible = !newFlow.box.visible;
-        // newFlow.visible = !newFlow.visible;
         return { ...switchSelf };
       });
     },
@@ -222,23 +230,14 @@ const SwitchView = (props: { switches: switchesType }) => {
   );
 
   const toggleFlowVisibilityOfSelected = () => {
-    console.log("AAAAAA");
     setSwitchSelf((switchSelf) => {
-      let newFlow = switchSelf.flowEntries.find((f) => f.box.id === selected.id);
+      const newSwitchSelf = { ...switchSelf };
+      let newFlow = newSwitchSelf.flowEntries.find((f) => f.box.id === selected.id);
       newFlow.box.visible = !newFlow.box.visible;
-      return { ...switchSelf };
+      return newSwitchSelf;
     });
   };
 
-  // const focusedWindow
-
-  // const drawFlow = useCallback((flow) => {});
-
-  // const [boxes, setBoxes] = useState<BoxType[]>([
-  //   // { id: "box1", menuWindowOpened: true, visible: true, x: 50, y: 50, shape: "modBox" },
-  // ]);
-
-  // console.log("boxes", boxes);
   const [lines, setLines] = useState<lineType[]>([
     // {
     //   props: {
@@ -253,7 +252,6 @@ const SwitchView = (props: { switches: switchesType }) => {
     // },
   ]);
 
-  // selected:{id:string,type:"arrow"|"box"}
   const [selected, setSelected] = useState<selectedType>(null);
   const [actionState, setActionState] = useState<actionsTypes>("Normal");
 
@@ -290,19 +288,22 @@ const SwitchView = (props: { switches: switchesType }) => {
   };
 
   const updateFlow = (updatedFlow: flowEntryType) => {
-    console.log("updatedFlow", updatedFlow);
     setSwitchSelf((switchSelf) => {
       const newSwitchSelf = { ...switchSelf };
       let i = newSwitchSelf.flowEntries.findIndex((f) => f.box.id === updatedFlow.box.id);
-      newSwitchSelf.flowEntries[i] = updatedFlow;
+      newSwitchSelf.flowEntries[i] = { ...updatedFlow };
       return newSwitchSelf;
     });
   };
 
-  // const setBoxes = (boxes) => setSwitchSelf(switchSelf=>{
-  //   const newSwitchSelf = {...switchSelf};
-  //   newSwitchSelf.flowEntries[]
-  // })
+  const updateFlowName = (id: string, newName: string) => {
+    setSwitchSelf((switchSelf) => {
+      const newSwitchSelf = { ...switchSelf };
+      let i = newSwitchSelf.flowEntries.findIndex((f) => f.box.id === id);
+      newSwitchSelf.flowEntries[i].box.name = newName;
+      return newSwitchSelf;
+    });
+  };
 
   const checkExistence = useCallback(
     (id) => {
@@ -339,7 +340,6 @@ const SwitchView = (props: { switches: switchesType }) => {
 
   const handleDropBox = useCallback(
     (e) => {
-      // console.log("boxContainer on drop!");
       let shape = e.dataTransfer.getData("shape");
       if (boxShapes.includes(shape)) {
         let { x, y } = e.target.getBoundingClientRect();
@@ -409,25 +409,14 @@ const SwitchView = (props: { switches: switchesType }) => {
     [lines.length, selected]
   );
 
-  const removeBox = useCallback(
-    (boxId: string) => {
-      // setBoxes((boxes) => boxes.filter((box) => !(box.id === boxId)));
-      // console.log("changeMe!");
-    },
-    [getBoxes().length, selected]
-  );
+  const removeConnectedLines = (boxId: string) => {
+    setLines((lines) => {
+      return lines.filter((line) => !(line.props.start === boxId || line.props.end === boxId));
+    });
+  };
 
   const removeSelectedBox = useCallback(() => {
-    if (window.confirm(`are you sure you want to delete ${selected.id}?`)) {
-      // first remove any lines connected to the node.
-      setLines((lines) => {
-        return lines.filter((line) => !(line.props.start === selected.id || line.props.end === selected.id));
-      });
-      // remove box
-      // setBoxes((boxes) => boxes.filter((box) => !(box.id === selected.id)));
-      console.log("changeMe!");
-      handleSelect(null);
-    }
+    delFlowFromServer(switchSelf.flowEntries.find((f) => f.box.id === selected.id));
   }, [getBoxes().length, selected]);
 
   const addLineToSelectedBox = useCallback(
@@ -462,63 +451,105 @@ const SwitchView = (props: { switches: switchesType }) => {
       newBox.menuWindowOpened = true;
       return newSwitchSelf;
     });
-    // setBoxes((boxes) =>
-    //   boxes.map((box) => {
-    //     return box.id === selected.id
-    //       ? {
-    //           ...box,
-    //           menuWindowOpened: true,
-    //         }
-    //       : box;
-    //   })
-    // );
   }, [selected]);
 
+  // const convertActionsFromUI2ServerSet = (actions: flowEntryDetailsType["actions"][]): serverSetFlowType["actions"][] =>
+  //   actions.map((ac) =>
+  //     (Object.keys(ac) as Array<keyof typeof ac>).map((acKey) => ({
+  //       type: acKey,
+  //       port: Number(ac[acKey]),
+  //     }))
+  //   );
+  const convertActionsFromUI2ServerSet = (actions: flowEntryDetailsType["actions"]): serverSetFlowType["actions"] =>
+    (Object.keys(actions) as Array<keyof typeof actions>).map((ac) => ({
+      type: ac,
+      port: Number(actions[ac]),
+    }));
+
+  const convertActionsFromServerGet2UI = (actions: serverGetFlowType["actions"]): flowEntryDetailsType["actions"] =>
+    actions.map((ac) => ac.split(":")).reduce((acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }), {});
+
+  // (Object.keys(actions) as Array<keyof typeof actions>).map((ac) => ({
+  //   type: ac,
+  //   port: Number(actions[ac]),
+  // }));
+
   const delFlowFromServer = useCallback(
-    (flow: flowEntryType) => {
-      const parsedActions = flow.details.actions
-        .map((ac) => ac.split(":"))
-        .reduce((acu: any, cu: any) => acu.concat({ type: cu[0], port: cu[1] }), []);
+    (flow: flowEntryType, callback?: () => void) => {
+      const confirm = window.confirm(`are you sure you want to delete ${flow.box.id}?`);
+      if (confirm === false) return;
+      const parsedActions = convertActionsFromUI2ServerSet(flow.details.actions);
       const reqBody = { ...flow.details, dpid: Number(switchSelf.dpid), actions: parsedActions };
       const requestOptions = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reqBody),
       };
-      fetch(proxyAddress + "http://localhost:8080/stats/flowentry/delete", requestOptions).then((response) => {
+      fetch(proxyAddress + "http://localhost:8080/stats/flowentry/delete_strict", requestOptions).then((response) => {
         if (response.status !== 200) alert(response.status);
         else {
-          console.log("?");
+          removeConnectedLines(flow.box.id);
           setSwitchSelf((switchSelf) => {
             const newSw = { ...switchSelf };
             const i = newSw.flowEntries.findIndex((f) => _.isEqual(f, flow));
-            // delete newSw.flowEntries[i];
-            // newSw.flowEntries.splice(i, 1);
-            // newSw.flowEntries = newSw.flowEntries.filter((f) => !f.details.ma);
             newSw.flowEntries = newSw.flowEntries.filter((f) => !_.isEqual(f, flow));
             return newSw;
           });
-          removeBox(JSON.stringify(flow.details.match));
+          if (callback) callback();
         }
       });
     },
     [switchSelf]
   );
 
+  const convertNumericStringsInObj2numbers = (obj: { [key: string]: any }): { [key: string]: any } => {
+    const newObj = { ...obj };
+    for (let key in obj) {
+      if (typeof obj[key] === "string") newObj[key] = isNaN(obj[key]) === false ? Number(obj[key]) : obj[key];
+    }
+    return newObj;
+  };
+
+  const checkFlowExistence = (flowMatch: flowEntryType["details"]["match"]) =>
+    switchSelf.flowEntries.find(
+      (f) => JSON.stringify(f.details.match) === JSON.stringify(convertNumericStringsInObj2numbers(flowMatch))
+    );
+
+  const getFlowDetailsFromServer = (
+    flowMatch: flowEntryDetailsType["match"],
+    callback?: (flowsDetails: flowEntryDetailsType) => void
+  ) => {
+    const requestOptions = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ match: flowMatch }),
+    };
+    fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid, requestOptions)
+      .then((response) => {
+        if (response.status !== 200) alert(response.status);
+        else return response.json();
+      })
+      .then((flowDetails: { [dpid: number]: serverGetFlowType[] }) => {
+        const serverFlowDetails = flowDetails[Number(dpid)][0];
+        callback({ ...serverFlowDetails, actions: convertActionsFromServerGet2UI(serverFlowDetails.actions) });
+      });
+  };
+
   const addFlowToServer = useCallback(
-    (
-      flow: flowEntryType,
-      modDetails: flowEntryType["box"]["modData"] & Omit<Partial<flowEntryDetailsType>, "actions">,
-      callback?: () => void
-    ) => {
-      console.log("addFlow!");
-      const { match = {}, actions = {}, priority = 1 } = modDetails;
-      const parsedActions = Object.keys(actions).map((fKey) => ({
-        type: fKey as any,
-        port: (actions as any)[fKey],
-      }));
-      const reqBody: flowEntryDetailsUpdateType = {
-        ...modDetails,
+    (flow: flowEntryType, callback?: (updatedFlowDetails: flowEntryDetailsType) => void) => {
+      const { match = {}, actions = {}, priority = 1 } = flow.details;
+      const flowExist = checkFlowExistence(match);
+      if (flowExist) {
+        alert(
+          "the flow " +
+            flowExist.box.name +
+            " with the same match rule already exist.\nFlows with same match rules are not allowed."
+        );
+        return;
+      }
+      const parsedActions = convertActionsFromUI2ServerSet(actions);
+      const reqBody: serverSetFlowType = {
+        ...flow.details,
         match,
         actions: parsedActions,
         priority,
@@ -529,34 +560,48 @@ const SwitchView = (props: { switches: switchesType }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reqBody),
       };
-      console.log("reqBody", reqBody);
       fetch(proxyAddress + "http://localhost:8080/stats/flowentry/add", requestOptions).then((response) => {
         if (response.status !== 200) alert(response.status);
         else {
-          updateFlow({
-            ...flow,
-            details: {
-              ...flow.details,
-              match,
-              actions: Object.keys(actions).map((k) => k + ":" + (actions as any)[k]),
-            },
-            isSynced: true,
+          //retrieve all details of flow from server because some of the details may be set by the server
+          getFlowDetailsFromServer(match, (flowDetails) => {
+            const updatedFlow = {
+              ...flow,
+              details: {
+                ...flowDetails, //server respond with list of matching flows but we know there is a single flow matching to single match rule
+              },
+              isSynced: true,
+            };
+            updateFlow(updatedFlow);
+            if (callback) callback(updatedFlow.details);
           });
-          if (callback) callback();
-          // return response.text();
-          // if (callback) callback({ ...flow, details: reqBody });
-          // setSwitchSelf((switchSelf) => {
-          //   const newSw = { ...switchSelf };
-          //   const i = newSw.flowEntries.findIndex((f) => _.isEqual(f, flow));
-          //   newSw.flowEntries = newSw.flowEntries.filter((f) => !_.isEqual(f, flow));
-          //   return newSw;
-          // });
-          // removeBox(JSON.stringify(flow.details.match));
         }
       });
     },
     [switchSelf]
   );
+
+  const updateFlowOnServer = (updatedFlowDetails: flowEntryDetailsType, callback?: () => void) => {
+    // update flow details based on box name of flow
+    // update means delete the previous flow
+    const parsedActions = convertActionsFromUI2ServerSet(updatedFlowDetails.actions);
+    const reqBody: Partial<serverSetFlowType> = {
+      ...updatedFlowDetails,
+      actions: parsedActions,
+      dpid: Number(switchSelf.dpid),
+    };
+    const requestOptions = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reqBody),
+    };
+    fetch(proxyAddress + "http://localhost:8080/stats/flowentry/modify_strict", requestOptions).then((response) => {
+      if (response.status !== 200) alert(response.status);
+      else {
+        if (callback) callback();
+      }
+    });
+  };
 
   const canvasProps = useMemo(
     () => ({
@@ -582,6 +627,8 @@ const SwitchView = (props: { switches: switchesType }) => {
       toggleFlowVisibilityOfSelected,
       delFlowFromServer,
       addFlowToServer,
+      updateFlowOnServer,
+      updateFlowName,
     }),
     [
       setPorts,
@@ -606,6 +653,8 @@ const SwitchView = (props: { switches: switchesType }) => {
       toggleFlowVisibilityOfSelected,
       delFlowFromServer,
       addFlowToServer,
+      updateFlowOnServer,
+      updateFlowName,
     ]
   );
 
@@ -624,7 +673,7 @@ const SwitchView = (props: { switches: switchesType }) => {
                 fontSize={"large"}
                 // color="black"
                 className="infoButton"
-                onClick={() => setSwitchDetailsWindow(true)}
+                onClick={() => setSwitchDetailsWindow(!switchDetailsWindow)}
               />
             </div>
             <div className="innerCanvas">
@@ -643,7 +692,7 @@ const SwitchView = (props: { switches: switchesType }) => {
               })}
             </div>
             {switchDetailsWindow ? (
-              <SwitchDetailsWindow {...{ setSwitchDetailsWindow, flowEntries: switchSelf.flowEntries }} />
+              <SwitchDetailsModal {...{ setSwitchDetailsWindow, flowEntries: switchSelf.flowEntries }} />
             ) : null}
           </CanvasContext.Provider>
         ) : (

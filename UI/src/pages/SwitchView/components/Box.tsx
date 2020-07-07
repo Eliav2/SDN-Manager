@@ -3,6 +3,7 @@ import React, { useContext, useRef, useState } from "react";
 import Draggable, { DraggableEvent, DraggableData } from "react-draggable";
 import { CanvasContext, constants } from "../SwitchView";
 import ConnectPointsWrapper from "./ConnectPointsWrapper";
+import { matchFields } from "./aclsFields";
 
 import { boxShapesType } from "../SwitchView";
 import { fieldsNameType } from "./aclsFields";
@@ -17,10 +18,12 @@ export type BoxType = {
   clientY?: number;
   name?: string;
   menuWindowOpened?: boolean;
-  modData?: {
-    match?: { [key in fieldsNameType<"match">]?: string };
-    actions: { [key in fieldsNameType<"actions">]?: string };
-  };
+  // modData?: {
+  //   // match?: {typeof matchFields[number][0]:typeof matchFields[number][3]};
+  //   match?: { [key in fieldsNameType<"match">]?: string };
+  //   actions?: { [key in fieldsNameType<"actions">]?: string };
+  //   priority?: number;
+  // };
   visible?: boolean;
 };
 

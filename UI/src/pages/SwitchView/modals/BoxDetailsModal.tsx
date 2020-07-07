@@ -1,79 +1,60 @@
-////@ts-nocheck
-
 import React, { useState, useContext } from "react";
 import Draggable from "react-draggable";
 // import MaterialIcon from "material-icons-react";
 import TextField from "@material-ui/core/TextField";
+import InputBase from "@material-ui/core/InputBase";
 import AddOutlinedIcon from "@material-ui/icons/AddOutlined";
 import DeleteOutlinedIcon from "@material-ui/icons/DeleteOutlined";
 import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
 import CheckIcon from "@material-ui/icons/Check";
 import SaveIcon from "@material-ui/icons/Save";
-import SettingsBackupRestoreIcon from "@material-ui/icons/SettingsBackupRestore";
+// import SettingsBackupRestoreIcon from "@material-ui/icons/SettingsBackupRestore";
 import Popup from "reactjs-popup";
 import { matchFields, actionsFields } from "../components/aclsFields";
 import { CanvasContext, flowEntryType, flowEntryDetailsType } from "../SwitchView";
 import { BoxType } from "../components/Box";
-import { isEqual, flow } from "lodash";
+import { isEqual } from "lodash";
 
-const ModBoxWindow = ({ flow }: { flow: flowEntryType }) => {
+const BoxDetailsModal = ({ flow }: { flow: flowEntryType }) => {
   const c = useContext(CanvasContext);
-  if (!flow.box.modData) flow.box.modData = { match: {}, actions: {} };
+  // if (!flow.details) flow.details = { match: {}, actions: {}, priority: 1 };
 
-  const [matchDetails, setMatchDetails] = useState({ ...flow.box.modData.match });
-  const [actionsDetails, setActionsDetails] = useState({ ...flow.box.modData.actions });
+  const [matchDetails, setMatchDetails] = useState({ ...flow.details.match });
+  const [actionsDetails, setActionsDetails] = useState({ ...flow.details.actions });
 
-  const modDetails = { match: { ...matchDetails }, actions: { ...actionsDetails } };
-
-  const handleSaveChanges = () => {
-    // console.log("handleSaveChanges");
-    // let newBox = boxProp;
-    // newBox.modData = modDetails;
-    c.updateBox({ ...flow.box, modData: modDetails });
-    // setModDetailsBackup(modDetails);
-    // c.switchSelf
-    // c.setBoxes((boxes) => {
-    //   const newBoxes = [...boxes];
-    //   let newBox = newBoxes.find((box) => box.id === boxProp.id);
-    //   newBox.modData = modDetails;
-    //   return newBoxes;
-    // });
+  const modDetails: flowEntryDetailsType = {
+    match: { ...matchDetails },
+    actions: { ...actionsDetails },
+    priority: flow.details.priority = 1,
   };
 
-  // const [modDetailsBackup, setModDetailsBackup] = useState({ ...modDetails });
-  // const handleRestoreChanges = () => {
-  //   setActionsDetails(modDetailsBackup.actions);
-  //   setMatchDetails(modDetailsBackup.match);
-  // };
+  const handleSaveChanges = (flowDetails?: flowEntryDetailsType) => {
+    // const newBox = { ...flow.box, modData: modDetails }
+    // c.updateFlowOnServer(modDetails,()=> c.updateBox({ ...flow.box, modData: modDetails }));
+    const updatedFlow = { ...flow, details: flowDetails ? flowDetails : modDetails, isSynced: true };
+    c.updateFlowOnServer(updatedFlow.details, () => c.updateFlow(updatedFlow));
+
+    // c.updateBox({ ...flow.box });
+  };
 
   const handleClose = () => {
     c.updateBox({ ...flow.box, menuWindowOpened: false });
-    // c.setBoxes((boxes) =>
-    //   boxes.map((box) =>
-    //     box.id === boxProp.id
-    //       ? {
-    //           ...box,
-    //           menuWindowOpened: false,
-    //         }
-    //       : box
-    //   )
-    // );
   };
 
   const handleConfirmFlow = () => {
     //here we should add this flow to the the vSwitch
-    console.log("handleConfirmFlow");
-    // const flow:flowEntryDetailsType = {match:matchDetails, actions: actionsDetails,priority:1}
-    c.addFlowToServer(flow, modDetails, handleSaveChanges);
+    // c.addFlowToServer(flow, modDetails, handleSaveChanges);
+    // c.addFlowToServer({ ...flow, details: modDetails });
+    c.addFlowToServer({ ...flow, details: modDetails }, (flowDetails) => handleSaveChanges(flowDetails));
   };
 
-  console.log("ModBoxWindow render", flow);
+  // console.log("ModBoxWindow render", flow);
 
   return (
     <Draggable enableUserSelectHack={false} defaultPosition={{ x: flow.box.x, y: flow.box.y - 100 }}>
       <div className="menuWindowContainer" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignSelf: "flex-end" }}>
-          {isEqual(modDetails, flow.box.modData) === false && flow.isSynced ? (
+          {isEqual(flow.details, { ...flow.details, ...modDetails }) === false && flow.isSynced ? (
             <>
               <SaveIcon
                 titleAccess="Update changes of this flow entry on the vSwitch"
@@ -82,13 +63,6 @@ const ModBoxWindow = ({ flow }: { flow: flowEntryType }) => {
                 style={{ position: "relative" }}
                 onClick={() => handleSaveChanges()}
               />
-              {/* <SettingsBackupRestoreIcon
-                titleAccess="Update changes of this flow entry on the vSwitch"
-                className="button"
-                fontSize={"large"}
-                style={{ position: "relative" }}
-                onClick={() => handleRestoreChanges()}
-              /> */}
             </>
           ) : null}
           <CloseOutlinedIcon
@@ -107,7 +81,15 @@ const ModBoxWindow = ({ flow }: { flow: flowEntryType }) => {
           )}
         </div>
 
-        <div className={"header"}>{`${flow.box.name}`}</div>
+        {/* <div className={"header"}>{`${flow.box.name}`}</div> */}
+        <div className="header">
+          <InputBase
+            defaultValue={flow.box.name}
+            inputProps={{ "aria-label": "naked", style: { textAlign: "center" } }}
+            style={{ fontSize: "1.4em" }}
+            onChange={(e) => c.updateFlowName(flow.box.id, e.target.value)}
+          />
+        </div>
         <hr style={{ width: "90%" }} />
         <div className="propsContainer">
           <SectionMenu sectionName="match" fields={matchFields} details={matchDetails} setDetails={setMatchDetails} />
@@ -123,7 +105,7 @@ const ModBoxWindow = ({ flow }: { flow: flowEntryType }) => {
   );
 };
 
-type sectionNameType = keyof BoxType["modData"];
+type sectionNameType = "actions" | "match";
 type fieldsType<secName extends sectionNameType> = secName extends "match" ? typeof matchFields : typeof actionsFields;
 type fieldsNameType<secName extends sectionNameType> = fieldsType<secName>[number][0];
 
@@ -135,37 +117,30 @@ const SectionMenu = <SecName extends sectionNameType>({
 }: {
   sectionName: SecName;
   fields: fieldsType<SecName>;
-  details: BoxType["modData"][SecName];
-  setDetails: React.Dispatch<React.SetStateAction<BoxType["modData"][SecName]>>;
+  // details: BoxType["modData"][SecName];
+  details: flowEntryDetailsType[SecName];
+  setDetails: React.Dispatch<React.SetStateAction<flowEntryDetailsType[SecName]>>;
 }) => {
   const c = useContext(CanvasContext);
 
-  type fieldName = keyof BoxType["modData"][SecName];
+  type fieldName = fieldsNameType<SecName>;
 
-  const handleAddField = (key: fieldsNameType<SecName>) => {
-    // let newBox = { ...box };
-    // newBox.modData[sectionName] = Object.assign(newBox.modData[sectionName], { [key]: "" });
-    // c.setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
-    console.log("handleAddField details", details);
-
+  const handleAddField = (key: fieldName) => {
     setDetails({ ...Object.assign(details, { [key]: "" }) });
   };
 
   const handleDelField = (key: fieldName) => {
-    // let newBox = { ...box };
-    // delete newBox.modData[sectionName][key];
-    // c.setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
     setDetails((details) => {
+      // key = "OUTPUT";
+      // newDetails.
       const newDetails = { ...details };
-      delete newDetails[key];
+      // newDetails.
+      delete (newDetails as any)[key];
       return newDetails;
     });
   };
 
   const handleSaveFieldChange = (value: string, key: fieldName) => {
-    // let newBox = { ...box };
-    // newBox.modData[sectionName] = Object.assign(newBox.modData[sectionName], { [key]: value });
-    // c.setBoxes((boxes) => boxes.map((box) => (box.id === newBox.id ? newBox : box)));
     setDetails({ ...Object.assign(details, { [key]: value }) });
   };
 
@@ -196,8 +171,8 @@ const InputField = <SecName extends sectionNameType>({
 }: {
   name: string;
   value: string;
-  handleDelField: (key: keyof BoxType["modData"][SecName]) => void;
-  handleSaveFieldChange: (value: string, key: keyof BoxType["modData"][SecName]) => void;
+  handleDelField: (key: fieldsNameType<SecName>) => void;
+  handleSaveFieldChange: (value: string, key: fieldsNameType<SecName>) => void;
 }) => {
   // const [value, setValue] = useState(initialValue);
 
@@ -217,7 +192,6 @@ const InputField = <SecName extends sectionNameType>({
           value={value}
           className="inputField"
           placeholder="Enter Value..."
-          // onChange={(e) => setValue(e.target.value)}
           onChange={(e) => handleSaveFieldChange(e.target.value, name as any)}
           style={{ fontSize: "0.9em" }}
         />
@@ -226,17 +200,8 @@ const InputField = <SecName extends sectionNameType>({
         titleAccess="Delete this field"
         fontSize={"large"}
         className="button addButton"
-        onClick={() => handleDelField(name as keyof BoxType["modData"][SecName])}
+        onClick={() => handleDelField(name as fieldsNameType<SecName>)}
       />
-      {/* {initialValue !== value ? (
-        <SaveIcon
-          titleAccess="Save changes on current field"
-          fontSize={"large"}
-          style={{ right: 60 }}
-          className="button addButton"
-          onClick={() => handleSaveFieldChange(value, name as any)}
-        />
-      ) : null} */}
     </div>
   );
 };
@@ -317,4 +282,4 @@ const PopUpMenu = <SecName extends sectionNameType>({
   );
 };
 
-export default ModBoxWindow;
+export default BoxDetailsModal;

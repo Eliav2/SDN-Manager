@@ -46,7 +46,6 @@ const TopBar = () => {
         c.openModsWindowOfSelected();
         break;
       case "Hide":
-        console.log("asdasdasdas");
         c.toggleFlowVisibilityOfSelected();
         break;
       case "Delete":

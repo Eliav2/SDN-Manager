@@ -273,7 +273,7 @@ export const actionsFields = [
 
 // export type actionsFieldsType = typeof actionsFields[number][0];
 
-export type sectionNameType = keyof BoxType["modData"];
+export type sectionNameType = "actions" | "match";
 export type fieldsType<secName extends sectionNameType> = secName extends "match"
   ? typeof matchFields
   : typeof actionsFields;
