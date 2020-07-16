@@ -11,9 +11,10 @@ import SaveIcon from "@material-ui/icons/Save";
 // import SettingsBackupRestoreIcon from "@material-ui/icons/SettingsBackupRestore";
 import Popup from "reactjs-popup";
 import { matchFields, actionsFields } from "../components/aclsFields";
-import { CanvasContext, flowEntryType, flowEntryDetailsType } from "../SwitchView";
-import { BoxType } from "../components/Box";
+import { CanvasContext, flowUIType } from "../SwitchView";
 import { isEqual } from "lodash";
+import { flowType } from "../../../utils/serverRequests";
+import { Grid } from "@material-ui/core";
 
 // const useStateWithCallback = (initialState, callback?) => {
 //   const [state, setState] = useState(initialState);
@@ -23,13 +24,13 @@ import { isEqual } from "lodash";
 //   return [state, setState];
 // };
 
-const BoxDetailsModal = ({ flow }: { flow: flowEntryType }) => {
+const FlowDetailsModal = ({ flow }: { flow: flowUIType }) => {
   const c = useContext(CanvasContext);
   // if (!flow.details) flow.details = { match: {}, actions: {}, priority: 1 };
 
   const [matchDetails, setMatchDetails] = useState({ ...flow.details.match });
   const [actionsDetails, setActionsDetails] = useState({ ...flow.details.actions });
-
+  const [priority, setPriority] = useState(flow.details.priority);
   // const selfRef = useRef(null);
 
   // React.createRef();
@@ -43,23 +44,23 @@ const BoxDetailsModal = ({ flow }: { flow: flowEntryType }) => {
   //   flow,
   // }));
 
-  const modDetails: flowEntryDetailsType = {
+  const modDetails: flowType = {
     match: { ...matchDetails },
     actions: { ...actionsDetails },
-    priority: flow.details.priority = 1,
+    priority: priority,
   };
 
-  const handleSaveChanges = (flowDetails?: flowEntryDetailsType) => {
+  const handleSaveChanges = (flowDetails?: flowType) => {
     // const newBox = { ...flow.box, modData: modDetails }
     // c.updateFlowOnServer(modDetails,()=> c.updateBox({ ...flow.box, modData: modDetails }));
-    const updatedFlow: flowEntryType = {
+    const updatedFlow: flowUIType = {
       ...flow,
-      details: flowDetails ? flowDetails : modDetails,
+      details: flowDetails || modDetails,
       isSynced: true,
       box: { ...flow.box, flowDetailsModalOpen: false },
     };
     // c.updateFlowOnServer(updatedFlow.details, () => c.updateFlow(updatedFlow));
-    c.updateFlowOnServer(updatedFlow);
+    c.updateFlowOnServer(flow.box.id, updatedFlow);
 
     // c.updateBox({ ...flow.box });
   };
@@ -72,7 +73,10 @@ const BoxDetailsModal = ({ flow }: { flow: flowEntryType }) => {
     //here we should add this flow to the the vSwitch
     // c.addFlowToServer(flow, modDetails, handleSaveChanges);
     // c.addFlowToServer({ ...flow, details: modDetails });
-    c.addFlowToServer({ ...flow, details: modDetails }, (flowDetails) => handleSaveChanges(flowDetails));
+    c.addFlowToServer({
+      flow: { ...flow, details: modDetails },
+      callback: (flowDetails) => handleSaveChanges(flowDetails),
+    });
   };
   // console.log("ModBoxWindow render", flow.details, { ...flow.details, ...modDetails });
 
@@ -118,6 +122,17 @@ const BoxDetailsModal = ({ flow }: { flow: flowEntryType }) => {
         </div>
         <hr style={{ width: "90%" }} />
         <div className="propsContainer">
+          <Grid container justify="center">
+            <TextField
+              type="text"
+              label="priority"
+              placeholder="Enter Value..."
+              value={priority}
+              onChange={(e) => setPriority(Number(e.target.value))}
+              style={{ fontSize: "0.9em", margin: "8px 0" }}
+            />
+          </Grid>
+
           <SectionMenu sectionName="match" fields={matchFields} details={matchDetails} setDetails={setMatchDetails} />
           <SectionMenu
             sectionName="actions"
@@ -144,8 +159,8 @@ const SectionMenu = <SecName extends sectionNameType>({
   sectionName: SecName;
   fields: fieldsType<SecName>;
   // details: BoxType["modData"][SecName];
-  details: flowEntryDetailsType[SecName];
-  setDetails: React.Dispatch<React.SetStateAction<flowEntryDetailsType[SecName]>>;
+  details: flowType[SecName];
+  setDetails: React.Dispatch<React.SetStateAction<flowType[SecName]>>;
 }) => {
   const c = useContext(CanvasContext);
 
@@ -310,4 +325,4 @@ const PopUpMenu = <SecName extends sectionNameType>({
   );
 };
 
-export default BoxDetailsModal;
+export default FlowDetailsModal;

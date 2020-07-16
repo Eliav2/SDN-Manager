@@ -2,20 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="da2989aa-493e-4d9a-b802-767303cf865e" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../UI/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../UI/src/App.jsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/Playground.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/Playground.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/components/Box.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/components/Box.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/components/ModBoxMenu.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/components/ModBoxMenu.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/components/TopBar.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/components/TopBar.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/components/Xarrow.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../UI/src/Playground/components/aclsFields.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../RUNME.sh" beforeDir="false" afterPath="$PROJECT_DIR$/../../RUNME.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../UI/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../UI/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../UI/src/pages/SwitchView/SwitchView.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../UI/src/pages/SwitchView/SwitchView.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../UI/src/pages/SwitchView/components/Port.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../UI/src/pages/SwitchView/components/Port.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../UI/src/pages/SwitchView/modals/FlowDetailsModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../UI/src/pages/SwitchView/modals/FlowDetailsModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../UI/src/pages/SwitchView/modals/SwitchDetailsModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../../UI/src/pages/SwitchView/modals/SwitchDetailsModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../UI/src/pages/switches/SwitchesPage.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../UI/src/pages/switches/SwitchesPage.tsx" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

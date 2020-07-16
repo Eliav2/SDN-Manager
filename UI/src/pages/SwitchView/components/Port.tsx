@@ -1,12 +1,9 @@
 import React, { useState, useContext, useRef } from "react";
-import Popup from "reactjs-popup";
 import ConnectPointsWrapper from "./ConnectPointsWrapper";
-// import XarrowWrapper from "./XarrowWrapper";
-// import AttachXarrow from "./AttachXarrow";
 import { CanvasContext, lineType } from "../SwitchView";
-import { portDetailsType } from "../../../App";
 import { portPolarityType } from "./PortsBar";
 import Tooltip from "@material-ui/core/Tooltip";
+import { portDetailsType } from "../../../utils/serverRequests";
 
 export type PortType = {
   id: string;

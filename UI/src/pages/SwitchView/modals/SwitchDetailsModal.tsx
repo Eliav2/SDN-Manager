@@ -1,5 +1,5 @@
 import React, { useContext, useRef } from "react";
-import { CanvasContext, switchSelfType, flowEntryType } from "../SwitchView";
+import { CanvasContext, switchSelfType, flowUIType } from "../SwitchView";
 import Draggable from "react-draggable";
 import { Rnd } from "react-rnd";
 import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
@@ -43,7 +43,7 @@ const SwitchDetailsModal = ({ setSwitchDetailsWindow, flowEntries = [] }: Switch
 
 type FlowDetailsProps = {
   i: number;
-  flowEntry: flowEntryType;
+  flowEntry: flowUIType;
 };
 
 const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {

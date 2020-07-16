@@ -1,23 +1,32 @@
-import React, { useState, createContext, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, createContext, useEffect, useCallback, useMemo } from "react";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import "./SwitchView.css";
-import Box, { BoxType } from "./components/Box";
-import TopBar, { actionsTypes } from "./components/TopBar";
+import { BoxType } from "./components/Box";
+import { actionsTypes } from "./components/TopBar";
 import XarrowWrapper, { XarrowWrapperType } from "./components/XarrowWrapper";
 import FlowDetailsModal from "./modals/FlowDetailsModal";
-import { useParams, match } from "react-router";
-import { proxyAddress, switchesType, portDetailsType } from "../../App";
+import { useParams } from "react-router";
 import PortsBar from "./components/PortsBar";
 import TestComponent from "./components/TestComponent";
 import BounceLoader from "react-spinners/BounceLoader";
 import SwitchDetailsModal from "./modals/SwitchDetailsModal";
-import _ from "lodash";
+import _, { isEqual, flow } from "lodash";
 import { PortType } from "./components/Port";
 import { xarrowPropsType } from "react-xarrows";
-import { fieldsNameType } from "./components/aclsFields";
 import ToolboxMenu from "./components/ToolboxMenu";
 import BoxesContainer from "./components/BoxesContainer";
-import { isEqual } from "lodash";
+import {
+  portDetailsType,
+  flowType,
+  serverSwitchesType,
+  getFlowsOfSwitch,
+  removeFlowFromSwitch,
+  addFlowToSwitch,
+  modifyFlowOnSwitch,
+  convertActionsFromUI2ServerPost,
+} from "../../utils/serverRequests";
+import { proxyAddress } from "../../App";
+
 // import { matchFieldsType, actionsFieldsType } from "./components/aclsFields";
 
 // import MaterialIcon from "material-icons-react";
@@ -38,7 +47,7 @@ type CanvasContextType = {
   >;
   // setBoxes: React.Dispatch<React.SetStateAction<BoxType[]>>;
   updateBoxOnUi: (updatedBox: BoxType) => void;
-  updateFlowOnUi: (updatedFlow: flowEntryType) => void;
+  updateFlowOnUi: (updatedFlow: flowUIType) => void;
   setLines: React.Dispatch<React.SetStateAction<any[]>>;
   selected: selectedType<"box" | "arrow">;
   setSelected: React.Dispatch<React.SetStateAction<selectedType>>;
@@ -55,9 +64,17 @@ type CanvasContextType = {
   handleSelect: (e: any, box?: any) => void;
   toggleFlowVisibility: (flow: any) => void;
   toggleFlowVisibilityOfSelected: () => void;
-  delFlow: (flow: flowEntryType, callback?: () => void) => void;
-  addFlowToServer: (flow: flowEntryType, callback?: (updatedFlowDetails: flowEntryDetailsType) => void) => void;
-  updateFlowOnServer: (updatedFlow: flowEntryType, callback?: () => void) => void;
+  delFlow: (flow: flowUIType, callback?: () => void) => void;
+  addFlowToServer: ({
+    flow,
+    callback,
+    checkExistence,
+  }: {
+    flow: flowUIType;
+    callback?: (updatedFlowDetails: flowType) => void;
+    checkExistence?: boolean;
+  }) => void;
+  updateFlowOnServer: (prevID: string, updatedFlow: flowUIType, callback?: () => void) => void;
   updateFlowName: (flowId: string, newName: string) => void;
 };
 
@@ -71,77 +88,24 @@ export type selectedType<t extends "box" | "arrow" = "box" | "arrow"> = t extend
   ? BoxType | PortType
   : XarrowWrapperType;
 
-export type serverSetFlowType = {
-  dpid?: number;
-  actions: { type: fieldsNameType<"actions">; port: number | string }[];
-  byte_count?: number;
-  cookie?: number;
-  duration_nsec?: number;
-  duration_sec?: number;
-  flags?: number;
-  hard_timeout?: number;
-  idle_timeout?: number;
-  length?: number;
-  match: { [key in fieldsNameType<"match">]?: string };
-  packet_count?: number;
-  priority: number;
-  table_id?: number;
-};
-
-export type serverGetFlowType = {
-  match: { [key in fieldsNameType<"match">]?: string };
-  actions: string[];
-  byte_count?: number;
-  cookie?: number;
-  duration_nsec?: number;
-  duration_sec?: number;
-  flags?: number;
-  hard_timeout?: number;
-  idle_timeout?: number;
-  length?: number;
-  packet_count?: number;
-  priority: number;
-  table_id?: number;
-};
-
-export type flowEntryDetailsType = {
-  match?: { [key in fieldsNameType<"match">]?: string };
-  actions?: { [key in fieldsNameType<"actions">]?: string };
-  byte_count?: number;
-  cookie?: number;
-  duration_nsec?: number;
-  duration_sec?: number;
-  flags?: number;
-  hard_timeout?: number;
-  idle_timeout?: number;
-  length?: number;
-  packet_count?: number;
-  priority?: number;
-  table_id?: number;
-};
-
-export type flowEntryType = {
-  details: flowEntryDetailsType;
+export type flowUIType = {
+  details: Partial<flowType<"UI">>;
   // visible: boolean;
   box: BoxType;
   isSynced: boolean;
 };
 
-export type switchSelfType = switchesType[string] & {
-  flowEntries: flowEntryType[];
+export type switchSelfType = serverSwitchesType[number] & {
+  flowEntries: flowUIType[];
 };
 
 export type modXarrowPropsType = Omit<xarrowPropsType, "start" | "end"> & { start: string; end: string };
 
-// export type lineType = {
-//   // props: { [P in keyof xarrowPropsType]: xarrowPropsType[P] };
-//   props: modXarrowPropsType;
-// };
 export type lineType = modXarrowPropsType;
 
-const SwitchView = (props: { switches: switchesType }) => {
-  // console.log(props.switches);
-  const { dpid } = useParams<{ dpid: string }>();
+const SwitchView = (props: { switches: serverSwitchesType }) => {
+  const { dpid: sDpid } = useParams<{ dpid: string }>();
+  const dpid = Number(sDpid);
   const [switchSelf, setSwitchSelf] = useState<switchSelfType>({ ...props.switches[dpid], flowEntries: [], dpid });
   const [ports, setPorts] = useState(
     switchSelf.ports.map((p) => ({
@@ -156,57 +120,51 @@ const SwitchView = (props: { switches: switchesType }) => {
   const [dataFetched, setDataFetched] = useState(false);
 
   const [switchDetailsWindow, setSwitchDetailsWindow] = useState(false);
+
   useEffect(() => {
-    fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid)
-      .then((res) => {
-        // console.log(res);
-        if (res.status !== 200) alert(res.status);
-        return res.json();
-      })
-      .then((result: { [dpid: string]: serverGetFlowType[] }) => {
-        console.log(result);
-        const parsedActions = setDataFetched(true);
-        setSwitchSelf({
-          ...switchSelf,
-          flowEntries: result[dpid].map((f, i) => ({
-            details: {
-              ...f,
-              actions: convertActionsFromServerGet2UI(f.actions), // parse actions because server return different format then state in UI
-            },
-            visible: false,
-            isSynced: true,
-            box: {
-              x: 50,
-              y: 100,
-              visible: false,
-              id: JSON.stringify(f.match),
-              name: "flow" + i,
-            },
-          })),
-        });
-      });
+    fetchFlowsFromServer();
   }, []);
 
-  const toggleFlowVisibility = useCallback(
-    (flow: flowEntryType) => {
-      setSwitchSelf((switchSelf) => {
-        let newFlow = switchSelf.flowEntries.find((f) => {
-          return JSON.stringify(f.details.match) === JSON.stringify(flow.details.match);
+  const fetchFlowsFromServer = () => {
+    getFlowsOfSwitch({
+      dpid,
+      onSuccess: (flows) => {
+        setDataFetched(true);
+        const boxesConSize = document.getElementById("boxesContainer").getBoundingClientRect();
+        setSwitchSelf((switchSelf) => {
+          const newSwitchSelf = { ...switchSelf };
+          newSwitchSelf.flowEntries = flows.map((f, i) => {
+            let x = boxesConSize.width * (0.2 + 0.8 * Math.random());
+            let y = boxesConSize.height * (0.2 + 0.8 * Math.random());
+            return {
+              details: f,
+              visible: false,
+              isSynced: true,
+              box: {
+                x,
+                y,
+                visible: false,
+                id: JSON.stringify(f.match),
+                name: "flow" + i,
+              },
+            };
+          });
+          return newSwitchSelf;
         });
-        newFlow.box.visible = !newFlow.box.visible;
-        return { ...switchSelf };
-      });
+      },
+    });
+  };
+
+  const toggleFlowVisibility = useCallback(
+    (flow: flowUIType) => {
+      flow.box.visible = !flow.box.visible;
+      updateFlowOnUi(flow);
     },
     [switchSelf]
   );
 
   const toggleFlowVisibilityOfSelected = () => {
-    setSwitchSelf((switchSelf) => {
-      const newSwitchSelf = { ...switchSelf };
-      let newFlow = newSwitchSelf.flowEntries.find((f) => f.box.id === selected.id);
-      newFlow.box.visible = !newFlow.box.visible;
-      return newSwitchSelf;
-    });
+    toggleFlowVisibility(switchSelf.flowEntries.find((f) => f.box.id === selected.id));
   };
 
   const [lines, setLines] = useState<lineType[]>([
@@ -258,7 +216,7 @@ const SwitchView = (props: { switches: switchesType }) => {
     });
   };
 
-  const updateFlowOnUi = (updatedFlow: flowEntryType) => {
+  const updateFlowOnUi = (updatedFlow: flowUIType) => {
     setSwitchSelf((switchSelf) => {
       const newSwitchSelf = { ...switchSelf };
       let i = newSwitchSelf.flowEntries.findIndex((f) => f.box.id === updatedFlow.box.id);
@@ -268,12 +226,9 @@ const SwitchView = (props: { switches: switchesType }) => {
   };
 
   const updateFlowName = (id: string, newName: string) => {
-    setSwitchSelf((switchSelf) => {
-      const newSwitchSelf = { ...switchSelf };
-      let i = newSwitchSelf.flowEntries.findIndex((f) => f.box.id === id);
-      newSwitchSelf.flowEntries[i].box.name = newName;
-      return newSwitchSelf;
-    });
+    const newFlow = switchSelf.flowEntries.find((f) => f.box.id === id);
+    newFlow.box.name = newName;
+    updateFlowOnUi(newFlow);
   };
 
   const checkExistence = useCallback(
@@ -292,7 +247,7 @@ const SwitchView = (props: { switches: switchesType }) => {
       var newName = prompt("Enter box name: ", "box" + l);
       while (checkExistence(newName)) newName = prompt("name taken,choose other: ");
       if (newName) {
-        let newFlow: flowEntryType = {
+        let newFlow: flowUIType = {
           isSynced: false,
           details: {},
           // visible: true,
@@ -362,15 +317,16 @@ const SwitchView = (props: { switches: switchesType }) => {
 
       const inputFlow = switchSelf.flowEntries.find((f) => f.box.id === startBoxId);
       const outputFlow = switchSelf.flowEntries.find((f) => f.box.id === endBoxId);
-      // console.log(startBoxId, endBoxId);
-      // console.log(inputFlow, outputFlow);
       if (inputFlow) {
         inputFlow.details.actions["OUTPUT"] = endBoxId.replace(":<output>", "");
-        updateFlowOnServer({ ...inputFlow });
+        updateFlow(inputFlow.box.id, inputFlow);
+        // inputFlow.details.actions.filter(ac=>ac==="OUTPUT").forEach
+        // inputFlow.isSynced ? updateFlow(inputFlow) : updateFlowOnUi(inputFlow);
       }
       if (outputFlow) {
         outputFlow.details.match["in_port"] = startBoxId.replace(":<input>", "");
-        updateFlowOnServer({ ...outputFlow });
+        updateFlow(outputFlow.box.id, outputFlow);
+        // outputFlow.isSynced ? updateFlow(outputFlow) : updateFlowOnUi(outputFlow);
       }
       // }
       // add line from selected box to passed 'box'
@@ -387,7 +343,7 @@ const SwitchView = (props: { switches: switchesType }) => {
 
   const removeSelectedBox = useCallback(() => {
     delFlow(switchSelf.flowEntries.find((f) => f.box.id === selected.id));
-  }, [getBoxes().length, selected]);
+  }, [switchSelf, selected]);
 
   const addLineToSelectedBox = useCallback(
     (box: BoxType) => {
@@ -408,11 +364,11 @@ const SwitchView = (props: { switches: switchesType }) => {
     const outputFlow = switchSelf.flowEntries.find((f) => f.box.id === lineId.end);
     if (inputFlow) {
       delete inputFlow.details.actions["OUTPUT"];
-      updateFlowOnServer({ ...inputFlow });
+      updateFlow(inputFlow.box.id, { ...inputFlow });
     }
     if (outputFlow) {
       delete outputFlow.details.match["in_port"];
-      updateFlowOnServer({ ...outputFlow });
+      updateFlow(outputFlow.box.id, { ...outputFlow });
     }
   };
 
@@ -435,49 +391,22 @@ const SwitchView = (props: { switches: switchesType }) => {
     });
   }, [selected]);
 
-  const convertActionsFromUI2ServerSet = (actions: flowEntryDetailsType["actions"]): serverSetFlowType["actions"] =>
-    (Object.keys(actions) as Array<keyof typeof actions>).map((ac) => ({
-      type: ac,
-      port: Number(actions[ac]) ? Number(actions[ac]) : actions[ac],
-    }));
-
-  const convertActionsFromServerGet2UI = (actions: serverGetFlowType["actions"]): flowEntryDetailsType["actions"] =>
-    actions.map((ac) => ac.split(":")).reduce((acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }), {});
-
-  // (Object.keys(actions) as Array<keyof typeof actions>).map((ac) => ({
-  //   type: ac,
-  //   port: Number(actions[ac]),
-  // }));
-
-  const delFlowFromUI = (flow: flowEntryType) => {
+  const delFlowFromUI = (flow: flowUIType) => {
     removeConnectedLines(flow.box.id);
     setSwitchSelf((switchSelf) => {
       const newSw = { ...switchSelf };
-      const i = newSw.flowEntries.findIndex((f) => _.isEqual(f, flow));
       newSw.flowEntries = newSw.flowEntries.filter((f) => !_.isEqual(f, flow));
       return newSw;
     });
     handleSelect(null);
   };
 
-  const delFlowFromServer = (flow: flowEntryType, callback?: () => void) => {
-    const parsedActions = convertActionsFromUI2ServerSet(flow.details.actions);
-    const reqBody = { ...flow.details, dpid: Number(switchSelf.dpid), actions: parsedActions };
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reqBody),
-    };
-    fetch(proxyAddress + "http://localhost:8080/stats/flowentry/delete_strict", requestOptions).then((response) => {
-      if (response.status !== 200) alert(response.status);
-      else {
-        if (callback) callback();
-      }
-    });
+  const delFlowFromServer = (flow: flowUIType, callback?: () => void) => {
+    removeFlowFromSwitch({ flow: flow.details, dpid, onSuccess: () => callback() });
   };
 
   const delFlow = useCallback(
-    (flow: flowEntryType) => {
+    (flow: flowUIType) => {
       const confirm = window.confirm(`are you sure you want to delete ${flow.box.name}?`);
       if (confirm === false) return;
       if (flow.isSynced === false) return delFlowFromUI(flow);
@@ -486,139 +415,106 @@ const SwitchView = (props: { switches: switchesType }) => {
     [switchSelf]
   );
 
-  const convertNumericStringsInObj2numbers = (obj: { [key: string]: any }): { [key: string]: any } => {
-    const newObj = { ...obj };
-    for (let key in obj) {
-      if (typeof obj[key] === "string") newObj[key] = isNaN(obj[key]) === false ? Number(obj[key]) : obj[key];
-    }
-    return newObj;
-  };
-  const convertNumbersInObj2strings = (obj: { [key: string]: any }): { [key: string]: any } => {
-    const newObj = { ...obj };
-    for (let key in obj) {
-      if (typeof obj[key] === "number") newObj[key] = String(obj[key]);
-    }
-    return newObj;
-  };
+  const checkFlowExistence = (flowMatch: flowType["match"]) =>
+    switchSelf.flowEntries.find((f) => JSON.stringify(f.details.match) === JSON.stringify(flowMatch));
 
-  const checkFlowExistence = (flowMatch: flowEntryType["details"]["match"]) =>
-    switchSelf.flowEntries.find(
-      (f) => JSON.stringify(f.details.match) === JSON.stringify(convertNumericStringsInObj2numbers(flowMatch))
-    );
-
-  const getFlowDetailsFromServer = (
-    flowMatch: flowEntryDetailsType["match"],
-    callback?: (flowsDetails: flowEntryDetailsType) => void
-  ) => {
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ match: flowMatch }),
-    };
-    fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid, requestOptions)
-      .then((response) => {
-        if (response.status !== 200) alert(response.status);
-        else return response.json();
-      })
-      .then((flowDetails: { [dpid: number]: serverGetFlowType[] }) => {
-        const serverFlowDetails = flowDetails[Number(dpid)][0];
-        callback({
-          ...serverFlowDetails,
-          match: convertNumbersInObj2strings(serverFlowDetails.match),
-          actions: convertActionsFromServerGet2UI(serverFlowDetails.actions),
-        });
-      });
-  };
+  // const getFlowDetailsFromServer = (
+  //   matchRule: Partial<flowType["match"]>,
+  //   callback?: (flowsDetails: flowType) => void
+  // ) => {
+  //   getFlowBasedOnMatchRuleFromSwitch({
+  //     dpid,
+  //     matchRule,
+  //     onSuccess: (flow) => {
+  //       callback(flow);
+  //     },
+  //   });
+  // };
 
   const addFlowToServer = useCallback(
-    (flow: flowEntryType, callback?: (updatedFlowDetails: flowEntryDetailsType) => void) => {
-      const { match = {}, actions = {}, priority = 1 } = flow.details;
-      const flowExist = checkFlowExistence(match);
-      console.log(match);
-      if (flowExist) {
-        alert(
-          "the flow " +
-            flowExist.box.name +
-            " with the same match rule already exist.\nFlows with same match rules are not allowed."
-        );
-        return;
-      }
-      const parsedActions = convertActionsFromUI2ServerSet(actions);
-      const reqBody: serverSetFlowType = {
-        ...flow.details,
-        match,
-        actions: parsedActions,
-        priority,
-        dpid: Number(switchSelf.dpid),
-      };
-      const requestOptions = {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reqBody),
-      };
-      fetch(proxyAddress + "http://localhost:8080/stats/flowentry/add", requestOptions).then((response) => {
-        if (response.status !== 200) alert(response.status);
-        else {
-          //retrieve all details of flow from server because some of the details may be set by the server
-          getFlowDetailsFromServer(match, (flowDetails) => {
-            if (isEqual(flowDetails.match, flow.details.match) === false) {
-              delFlowFromServer(flow);
-              const conflictedFlow = switchSelf.flowEntries.find((f) => isEqual(f.details.match, flowDetails.match));
-              const name = conflictedFlow.box.name;
-              alert(
-                "match rule conflicts with flow " +
-                  name +
-                  ".(means that the " +
-                  JSON.stringify(flow.details.match) +
-                  " rule also match the match rule of " +
-                  name +
-                  ")\nPlease provide more detailed match rule."
-              );
-              return;
-            }
-            const updatedFlow = {
-              ...flow,
-              details: {
-                ...flowDetails, //server respond with list of matching flows but we know there is a single flow matching to single match rule
-              },
-              isSynced: true,
-            };
-            updateFlowOnUi(updatedFlow);
-            if (callback) callback(updatedFlow.details);
-          });
+    ({
+      flow,
+      callback,
+      checkExistence = true,
+    }: {
+      flow: flowUIType;
+      callback?: (updatedFlowDetails: flowType) => void;
+      checkExistence?: boolean;
+    }) => {
+      const { match = {} } = flow.details;
+      if (checkExistence) {
+        const flowExist = checkFlowExistence(match);
+        if (flowExist) {
+          alert(
+            "the flow " +
+              flowExist.box.name +
+              " with the same match rule already exist.\nFlows with same match rules are not allowed."
+          );
+          return;
         }
+      }
+      addFlowToSwitch({
+        dpid,
+        flow: flow.details,
+        onSuccess: (flowDetails) => {
+          const updatedFlow = {
+            ...flow,
+            details: flowDetails,
+            isSynced: true,
+          };
+          updateFlowOnUi(updatedFlow);
+          if (callback) callback(updatedFlow.details);
+        },
+        onError: (error) => alert(error),
       });
     },
     [switchSelf]
   );
 
+  // const updateFlow = (updatedFlow: flowUIType) => {
+  //   updateFlowOnServer(updatedFlow, () => updateFlowOnUi(updatedFlow));
+  // };
+
   /**
    * will update a flow entry on vSwitch based on matching wildcards.
-   * after successful response will update the UI as well.
-   * @param updatedFlow - the flow to update details on server
+   * if successful response will update the UI as well.
+   * @param boxID - id of current flow(means previous match rule)
+   * @param updatedFlow - the updated flow
    * @param callback    - callback function that will be called after receive success code(200) from server
    *
    * @see https://ryu.readthedocs.io/en/latest/app/ofctl_rest.html#modify-flow-entry-strictly
    */
-  const updateFlowOnServer = (updatedFlow: flowEntryType, callback?: () => void) => {
-    const parsedActions = convertActionsFromUI2ServerSet(updatedFlow.details.actions);
-    const reqBody: Partial<serverSetFlowType> = {
-      ...updatedFlow.details,
-      actions: parsedActions,
-      dpid: Number(switchSelf.dpid),
-    };
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reqBody),
-    };
-    fetch(proxyAddress + "http://localhost:8080/stats/flowentry/modify_strict", requestOptions).then((response) => {
-      if (response.status !== 200) alert(response.status);
-      else {
-        updateFlowOnUi(updatedFlow);
-        if (callback) callback();
-      }
-    });
+  const updateFlow = (boxID: string, updatedFlow: flowUIType, callback?: () => void) => {
+    const flowToDelete = switchSelf.flowEntries.find((f) => f.box.id === boxID);
+    if (isEqual(flowToDelete.details, updatedFlow.details)) return;
+    delFlowFromServer(flowToDelete, () => addFlowToServer({ flow: updatedFlow, callback, checkExistence: false }));
+
+    // const relevantFlow = switchSelf.flowEntries.find((f) => f.box.id === updatedFlow.box.id);
+    // console.log(relevantFlow.details);
+    // modifyFlowOnSwitch({
+    //   dpid,
+    //   updatedFlow: relevantFlow.details,
+    //   onSuccess: () => callback(),
+    //   onError: (error) => alert(error),
+    // });
+
+    // const parsedActions = convertActionsFromUI2ServerPost(updatedFlow.details.actions);
+    // const reqBody = {
+    //   ...updatedFlow.details,
+    //   actions: parsedActions,
+    //   dpid: Number(switchSelf.dpid),
+    // };
+    // const requestOptions = {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify(reqBody),
+    // };
+    // fetch(proxyAddress + "http://localhost:8080/stats/flowentry/modify_strict", requestOptions).then((response) => {
+    //   if (response.status !== 200) alert(response.status);
+    //   else {
+    //     if (callback) callback();
+    //   }
+    // });
   };
 
   const canvasProps = useMemo(
@@ -645,7 +541,7 @@ const SwitchView = (props: { switches: switchesType }) => {
       delFlow,
       addFlowToServer,
       updateFlowOnUi,
-      updateFlowOnServer,
+      updateFlowOnServer: updateFlow,
       updateFlowName,
     }),
     [
@@ -671,12 +567,16 @@ const SwitchView = (props: { switches: switchesType }) => {
       delFlow,
       updateFlowOnUi,
       addFlowToServer,
-      updateFlowOnServer,
+      updateFlow,
       updateFlowName,
     ]
   );
 
   // console.log("SwitchView rendered", switchSelf.flowEntries);
+
+  // const drawFlowLines = (f) =>{
+
+  // }
 
   return (
     <div>
@@ -704,13 +604,15 @@ const SwitchView = (props: { switches: switchesType }) => {
               {/* {lines.map((line, i) => (
                 <XarrowWrapper key={line.start + "-" + line.end + i} {...{ line, selected }} />
               ))} */}
+              {/* draw connections */}
               {switchSelf.flowEntries.map((f) =>
                 f.box.visible ? (
                   <React.Fragment key={f.box.id}>
                     {f.details.match && f.details.match.in_port ? (
                       <XarrowWrapper line={{ start: f.details.match.in_port + ":<input>", end: f.box.id }} />
                     ) : null}
-                    {f.details.actions && f.details.actions.OUTPUT ? (
+                    {f.details.actions &&
+                    (isNaN(f.details.actions.OUTPUT as any) === false || f.details.actions.OUTPUT === "LOCAL") ? (
                       <XarrowWrapper line={{ start: f.box.id, end: f.details.actions.OUTPUT + ":<output>" }} />
                     ) : null}
                   </React.Fragment>
