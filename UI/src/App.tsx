@@ -5,7 +5,10 @@ import SwitchesPage from "./pages/SwitchesPage/SwitchesPage";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import Loading from "./components/Loading";
 import { Container } from "@material-ui/core";
-import { getAllSwitchesWithPortDescription, serverSwitchesType } from "./utils/serverRequests";
+import {
+  getAllSwitchesWithPortDescription,
+  serverSwitchesType,
+} from "./utils/serverRequests";
 import ServerError from "./components/ServerError";
 
 export const proxyAddress = "http://localhost:9089/";
@@ -50,7 +53,9 @@ const App = () => {
           </Switch>
         </Router>
       ) : (
-        <div className="mainWindow">{connectFailed ? <ServerError /> : <Loading />}</div>
+        <div className="mainWindow">
+          {connectFailed ? <ServerError /> : <Loading />}
+        </div>
       )}
       <div style={{ marginTop: 30 }}></div>
     </Container>
