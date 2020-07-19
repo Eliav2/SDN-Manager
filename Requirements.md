@@ -20,4 +20,4 @@ $ startx
 ```
 open new shell: rightClick>Debian>Applications>shells>bash
 then run on the shell `$ sudo ~/mininet/examples/miniedit.py`
-see [answer](https://stackoverflow.com/a/58038220).
+see [answer](https://stackoverflow.com/a/58038220) .
