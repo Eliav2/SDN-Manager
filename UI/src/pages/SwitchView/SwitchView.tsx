@@ -31,7 +31,8 @@ import {
   modifyFlowOnSwitch,
   convertActionsFromUI2ServerPost,
 } from "../../utils/serverRequests";
-import { serverUrl } from "../../App";
+import { ofctlRestUrl } from "../../App";
+import MainWindow from "../../components/MainWindow";
 
 // import { matchFieldsType, actionsFieldsType } from "./components/aclsFields";
 
@@ -122,7 +123,10 @@ export type modXarrowPropsType = Omit<xarrowPropsType, "start" | "end"> & {
 
 export type lineType = modXarrowPropsType;
 
-const SwitchView = (props: { switches: serverSwitchesType }) => {
+const SwitchView = (props: {
+  switches: serverSwitchesType;
+  ofctlRestUrl: string;
+}) => {
   const { dpid: sDpid } = useParams<{ dpid: string }>();
   const dpid = Number(sDpid);
   const [switchSelf, setSwitchSelf] = useState<switchSelfType>({
@@ -145,12 +149,13 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
   const [switchDetailsWindow, setSwitchDetailsWindow] = useState(false);
 
   useEffect(() => {
-    fetchFlowsFromServer();
+    fetchFlowsFromServer(ofctlRestUrl);
   }, []);
 
-  const fetchFlowsFromServer = () => {
+  const fetchFlowsFromServer = (url: string) => {
     getFlowsOfSwitch({
       dpid,
+      url,
       onSuccess: (flows) => {
         setDataFetched(true);
         const boxesConSize = document
@@ -474,6 +479,7 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
 
   const delFlowFromServer = (flow: flowUIType, callback?: () => void) => {
     removeFlowFromSwitch({
+      url: ofctlRestUrl,
       flow: flow.details,
       dpid,
       onSuccess: () => callback(),
@@ -533,6 +539,7 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
         }
       }
       addFlowToSwitch({
+        url: ofctlRestUrl,
         dpid,
         flow: flow.details,
         onSuccess: (flowDetails) => {
@@ -737,10 +744,10 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
             ) : null}
           </CanvasContext.Provider>
         ) : (
-          <div className="mainWindow">
+          <MainWindow>
             <h3>fetching switch data...</h3>
             <BounceLoader size={150} color={"#123abc"} loading={true} />
-          </div>
+          </MainWindow>
         )}
       </div>
       {/* {console.log("//////////////////////////////////////////////////////")} */}

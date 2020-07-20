@@ -7,7 +7,7 @@
     "cors-anywhere": "^0.4.3"
   },
   "scripts": {
-    "start": "node proxyServer.js",
+    "start": "node corsServer.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

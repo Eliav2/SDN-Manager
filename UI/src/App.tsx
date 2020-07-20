@@ -10,10 +10,10 @@ import {
   serverSwitchesType,
 } from "./utils/serverRequests";
 import ServerError from "./components/ServerError";
+import MainWindow from "./components/MainWindow";
 
-const proxyAddress = "http://localhost:9089/";
-// in production proxyAddress should be '' !
-export const serverUrl = "http://localhost:8080" + "/" + proxyAddress;
+const proxyAddress = "http://localhost:9089";
+export const ofctlRestUrl = proxyAddress + "/" + "http://localhost:8080";
 
 const App = () => {
   const [dataFetched, setDataFetched] = useState(false);
@@ -22,6 +22,7 @@ const App = () => {
 
   useEffect(() => {
     getAllSwitchesWithPortDescription({
+      url: ofctlRestUrl,
       onSuccess: (switches) => {
         setSwitches(switches);
         setDataFetched(true);
@@ -44,21 +45,18 @@ const App = () => {
               <SwitchesPage switches={switches} />
             </Route>
             <Route path="/switch/:dpid">
-              <SwitchView switches={switches} />
+              <SwitchView {...{ switches, ofctlRestUrl }} />
             </Route>
             <Route path="*">
-              <div className="mainWindow">
+              <MainWindow>
                 <h3>404 Not Found</h3>
-              </div>
+              </MainWindow>
             </Route>
           </Switch>
         </Router>
       ) : (
-        <div className="mainWindow">
-          {connectFailed ? <ServerError /> : <Loading />}
-        </div>
+        <MainWindow>{connectFailed ? <ServerError /> : <Loading />}</MainWindow>
       )}
-      <div style={{ marginTop: 30 }}></div>
     </Container>
   );
 };

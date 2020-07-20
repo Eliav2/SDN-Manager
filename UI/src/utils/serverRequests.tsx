@@ -4,7 +4,7 @@
  * The propose of all these requests is to serve the UI and return parsed data as the UI expect.
  */
 
-import { serverUrl } from "./../App";
+// import { ofctlRestUrl } from "./../App";
 import { fieldsNameType } from "../pages/SwitchView/components/aclsFields";
 import { isEqual, isMatch } from "lodash";
 
@@ -57,13 +57,15 @@ export type flowType<T extends "serverGet" | "serverPost" | "UI" = "UI"> = {
 };
 
 const getListOfSwitchesDpids = ({
+  url,
   onSuccess,
   onError,
 }: {
+  url: string;
   onSuccess: (switchesDpids: string[]) => any;
   onError?: (error: any) => any;
 }) => {
-  return fetch(serverUrl + "/stats/switches")
+  return fetch(url + "/stats/switches")
     .then((res) => res.json())
     .then(
       (switchesDpids: string[]) => {
@@ -76,15 +78,17 @@ const getListOfSwitchesDpids = ({
 };
 
 const getPortDescription = ({
+  url,
   dpid,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   onSuccess: (ports: portDetailsType) => any;
   onError?: (error: any) => any;
 }) => {
-  return fetch(serverUrl + "/stats/portdesc/" + dpid)
+  return fetch(url + "/stats/portdesc/" + dpid)
     .then((res) => res.json())
     .then(
       (ports: portDetailsType) => {
@@ -97,17 +101,22 @@ const getPortDescription = ({
 };
 
 export const getAllSwitchesWithPortDescription = ({
+  url,
   onSuccess,
   onError,
 }: {
+  url: string;
   onSuccess: (switches: serverSwitchesType) => any;
   onError?: (error: any) => any;
 }) => {
+  console.log(url + "/stats/switches");
   let switches: { [dpid: string]: portDetailsType[] } = {};
   getListOfSwitchesDpids({
+    url,
     onSuccess: (switchesDpids) => {
       const promises = switchesDpids.map((dpid) =>
         getPortDescription({
+          url,
           dpid: Number(dpid),
           onSuccess: (ports) => {
             switches = Object.assign(switches, ports);
@@ -237,14 +246,16 @@ const convertFlowUI2serverPost = (
 
 export const getFlowsOfSwitch = ({
   dpid,
+  url,
   onSuccess,
   onError,
 }: {
   dpid: number;
+  url: string;
   onSuccess: (flows: flowType<"UI">[]) => any;
   onError?: (error: any) => any;
 }) => {
-  fetch(serverUrl + "/stats/flow/" + dpid)
+  fetch(url + "/stats/flow/" + dpid)
     .then((res) => {
       if (res.status !== 200) alert(res.status);
       return res.json();
@@ -260,11 +271,13 @@ export const getFlowsOfSwitch = ({
 };
 
 export const removeFlowFromSwitch = ({
+  url,
   dpid,
   flow,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   flow: Partial<flowType<"UI">>;
   onSuccess?: () => any;
@@ -277,7 +290,7 @@ export const removeFlowFromSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(serverUrl + "/stats/flowentry/delete_strict", requestOptions).then(
+  fetch(url + "/stats/flowentry/delete_strict", requestOptions).then(
     (response) => {
       if (response.status !== 200) onError(response.status);
       if (onSuccess) onSuccess();
@@ -293,11 +306,13 @@ export const removeFlowFromSwitch = ({
  * @param flowMatch all flows matching given fields of current flow will be returned.
  */
 export const getFilteredFlowsFromSwitch = ({
+  url,
   dpid,
   flowMatch,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   flowMatch: Partial<flowType<"UI">>;
   onSuccess: (matchingFlows: flowType[]) => any;
@@ -308,7 +323,7 @@ export const getFilteredFlowsFromSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ match: flowMatch }),
   };
-  fetch(serverUrl + "/stats/flow/" + dpid, requestOptions)
+  fetch(url + "/stats/flow/" + dpid, requestOptions)
     .then((response) => {
       if (response.status !== 200) alert(response.status);
       else return response.json();
@@ -352,11 +367,13 @@ export const getFilteredFlowsFromSwitch = ({
  * @param flowMatch all flows matching given fields of current flow will be returned.
  */
 export const addFlowToSwitch = ({
+  url,
   dpid,
   flow,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   flow: Partial<flowType<"UI">>;
   onSuccess?: (flow: flowType<"UI">) => any;
@@ -376,13 +393,14 @@ export const addFlowToSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(serverUrl + "/stats/flowentry/add", requestOptions).then(
+  fetch(url + "/stats/flowentry/add", requestOptions).then(
     (response) => {
       if (response.status !== 200) alert(response.status);
       else {
         //after flow successfully  added retrieve all details of flow from server because some of the details may be set by the server
         if (onSuccess) {
           getFilteredFlowsFromSwitch({
+            url,
             dpid,
             flowMatch: { match },
             onSuccess: (flows) => {
@@ -426,11 +444,14 @@ export const addFlowToSwitch = ({
 };
 
 export const modifyFlowOnSwitch = ({
+  url,
   dpid,
+
   updatedFlow,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   updatedFlow: Partial<flowType<"UI">>;
   onSuccess?: () => any;
@@ -447,7 +468,7 @@ export const modifyFlowOnSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(serverUrl + "/stats/flowentry/modify_strict", requestOptions).then(
+  fetch(url + "/stats/flowentry/modify_strict", requestOptions).then(
     (response) => {
       if (response.status !== 200) alert(response.status);
       else {
