@@ -4,7 +4,7 @@
  * The propose of all these requests is to serve the UI and return parsed data as the UI expect.
  */
 
-import { proxyAddress } from "./../App";
+import { serverUrl } from "./../App";
 import { fieldsNameType } from "../pages/SwitchView/components/aclsFields";
 import { isEqual, isMatch } from "lodash";
 
@@ -32,7 +32,9 @@ export type serverSwitchesType = {
   [dpid: string]: serverSwitchType;
 };
 
-type flowActionsType<T extends "serverGet" | "serverPost" | "UI" = "UI"> = T extends "serverGet"
+type flowActionsType<
+  T extends "serverGet" | "serverPost" | "UI" = "UI"
+> = T extends "serverGet"
   ? string[]
   : T extends "serverPost"
   ? { type: fieldsNameType<"actions">; port: number }[]
@@ -61,7 +63,7 @@ const getListOfSwitchesDpids = ({
   onSuccess: (switchesDpids: string[]) => any;
   onError?: (error: any) => any;
 }) => {
-  return fetch(proxyAddress + "http://localhost:8080/stats/switches")
+  return fetch(serverUrl + "/stats/switches")
     .then((res) => res.json())
     .then(
       (switchesDpids: string[]) => {
@@ -82,7 +84,7 @@ const getPortDescription = ({
   onSuccess: (ports: portDetailsType) => any;
   onError?: (error: any) => any;
 }) => {
-  return fetch(proxyAddress + "http://localhost:8080/stats/portdesc/" + dpid)
+  return fetch(serverUrl + "/stats/portdesc/" + dpid)
     .then((res) => res.json())
     .then(
       (ports: portDetailsType) => {
@@ -146,7 +148,10 @@ export const convertActionsFromServerGet2UI = (
 
   const actionsUI = actions
     .map((ac) => ac.split(":"))
-    .reduce((acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }), {} as flowType<"UI">["actions"]);
+    .reduce(
+      (acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }),
+      {} as flowType<"UI">["actions"]
+    );
   return actionsUI;
 
   // return (Object.keys(actions) as Array<keyof typeof actions>).map((ac) => ({
@@ -176,10 +181,12 @@ export const convertActionsFromUI2ServerPost = (
   //   }))
   // );
 
-  const result = (Object.keys(actions) as Array<keyof typeof actions>).map((ac) => ({
-    type: ac,
-    port: Number(actions[ac]) ? Number(actions[ac]) : actions[ac],
-  }));
+  const result = (Object.keys(actions) as Array<keyof typeof actions>).map(
+    (ac) => ({
+      type: ac,
+      port: Number(actions[ac]) ? Number(actions[ac]) : actions[ac],
+    })
+  );
 
   // (Object.keys(actions) as Array<keyof typeof actions>).map((ac)
   return result as any;
@@ -189,15 +196,20 @@ export const convertActionsFromUI2ServerPost = (
 
 // }
 
-const convertNumericStringsInObj2numbers = (obj: { [key: string]: any }): { [key: string]: any } => {
+const convertNumericStringsInObj2numbers = (obj: {
+  [key: string]: any;
+}): { [key: string]: any } => {
   const newObj = { ...obj };
   for (let key in obj) {
-    if (typeof obj[key] === "string") newObj[key] = isNaN(obj[key]) === false ? Number(obj[key]) : obj[key];
+    if (typeof obj[key] === "string")
+      newObj[key] = isNaN(obj[key]) === false ? Number(obj[key]) : obj[key];
   }
   return newObj;
 };
 
-const convertNumbersInObj2strings = (obj: { [key: string]: any }): { [key: string]: any } => {
+const convertNumbersInObj2strings = (obj: {
+  [key: string]: any;
+}): { [key: string]: any } => {
   const newObj = { ...obj };
   for (let key in obj) {
     if (typeof obj[key] === "number") newObj[key] = String(obj[key]);
@@ -215,7 +227,9 @@ const convertFlowServerGet2UI = (flow: flowType<"serverGet">): flowType => ({
 //     actions: conver(flow.actions),
 //   });;
 
-const convertFlowUI2serverPost = (flow: Partial<flowType>): Partial<flowType<"serverPost">> => ({
+const convertFlowUI2serverPost = (
+  flow: Partial<flowType>
+): Partial<flowType<"serverPost">> => ({
   ...flow,
   match: convertNumericStringsInObj2numbers(flow.match),
   actions: convertActionsFromUI2ServerPost(flow.actions),
@@ -230,7 +244,7 @@ export const getFlowsOfSwitch = ({
   onSuccess: (flows: flowType<"UI">[]) => any;
   onError?: (error: any) => any;
 }) => {
-  fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid)
+  fetch(serverUrl + "/stats/flow/" + dpid)
     .then((res) => {
       if (res.status !== 200) alert(res.status);
       return res.json();
@@ -263,7 +277,7 @@ export const removeFlowFromSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(proxyAddress + "http://localhost:8080/stats/flowentry/delete_strict", requestOptions).then(
+  fetch(serverUrl + "/stats/flowentry/delete_strict", requestOptions).then(
     (response) => {
       if (response.status !== 200) onError(response.status);
       if (onSuccess) onSuccess();
@@ -294,7 +308,7 @@ export const getFilteredFlowsFromSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ match: flowMatch }),
   };
-  fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid, requestOptions)
+  fetch(serverUrl + "/stats/flow/" + dpid, requestOptions)
     .then((response) => {
       if (response.status !== 200) alert(response.status);
       else return response.json();
@@ -362,7 +376,7 @@ export const addFlowToSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(proxyAddress + "http://localhost:8080/stats/flowentry/add", requestOptions).then(
+  fetch(serverUrl + "/stats/flowentry/add", requestOptions).then(
     (response) => {
       if (response.status !== 200) alert(response.status);
       else {
@@ -372,7 +386,9 @@ export const addFlowToSwitch = ({
             dpid,
             flowMatch: { match },
             onSuccess: (flows) => {
-              const updatedFlow = flows.find((f) => isMatch(f, flow) && isEqual(f.match, flow.match));
+              const updatedFlow = flows.find(
+                (f) => isMatch(f, flow) && isEqual(f.match, flow.match)
+              );
               //   console.log(flows, flow, updatedFlow);
               onSuccess(updatedFlow);
             },
@@ -431,7 +447,7 @@ export const modifyFlowOnSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(proxyAddress + "http://localhost:8080/stats/flowentry/modify_strict", requestOptions).then(
+  fetch(serverUrl + "/stats/flowentry/modify_strict", requestOptions).then(
     (response) => {
       if (response.status !== 200) alert(response.status);
       else {

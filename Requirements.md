@@ -2,12 +2,13 @@
 ## Requiremnts for running 'RUNME.SH' script:
 
 ### the computer running the script
-- Ryu SDN installed.
 - 
 
 ### the machine simulating the network
-- open vSwitch installed
-- 
+- [open vSwitch](http://www.openvswitch.org/)  installed.
+- [Ryu SDN installed](https://ryu.readthedocs.io/en/latest/getting_started.html).
+- [Ryu ofctl_rest](https://ryu.readthedocs.io/en/latest/app/ofctl_rest.html) server application running.
+
 
 
 ## self notes:

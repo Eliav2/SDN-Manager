@@ -11,8 +11,9 @@ import {
 } from "./utils/serverRequests";
 import ServerError from "./components/ServerError";
 
-export const proxyAddress = "http://localhost:9089/";
+const proxyAddress = "http://localhost:9089/";
 // in production proxyAddress should be '' !
+export const serverUrl = "http://localhost:8080" + "/" + proxyAddress;
 
 const App = () => {
   const [dataFetched, setDataFetched] = useState(false);

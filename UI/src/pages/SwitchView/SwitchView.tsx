@@ -1,4 +1,10 @@
-import React, { useState, createContext, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  createContext,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import "./SwitchView.css";
 import { BoxType } from "./components/Box";
@@ -25,7 +31,7 @@ import {
   modifyFlowOnSwitch,
   convertActionsFromUI2ServerPost,
 } from "../../utils/serverRequests";
-import { proxyAddress } from "../../App";
+import { serverUrl } from "../../App";
 
 // import { matchFieldsType, actionsFieldsType } from "./components/aclsFields";
 
@@ -56,7 +62,13 @@ type CanvasContextType = {
   handleBoxClick: (e: any, box: any) => void;
   chooseBoxBackground: (box: any) => string;
   addBox: (x: any, y: any, shape: any) => void;
-  addLine: ({ startBoxId, endBoxId }: { startBoxId: string; endBoxId: string }) => void;
+  addLine: ({
+    startBoxId,
+    endBoxId,
+  }: {
+    startBoxId: string;
+    endBoxId: string;
+  }) => void;
   removeSelectedBox: () => void;
   addLineToSelectedBox: (box: any) => void;
   removeSelectedLine: () => void;
@@ -74,7 +86,11 @@ type CanvasContextType = {
     callback?: (updatedFlowDetails: flowType) => void;
     checkExistence?: boolean;
   }) => void;
-  updateFlowOnServer: (prevID: string, updatedFlow: flowUIType, callback?: () => void) => void;
+  updateFlowOnServer: (
+    prevID: string,
+    updatedFlow: flowUIType,
+    callback?: () => void
+  ) => void;
   updateFlowName: (flowId: string, newName: string) => void;
 };
 
@@ -84,9 +100,9 @@ export const constants = { draggingGrid: [1, 1] };
 export const boxShapes = ["modBox"] as const;
 
 export type boxShapesType = typeof boxShapes[number];
-export type selectedType<t extends "box" | "arrow" = "box" | "arrow"> = t extends "box"
-  ? BoxType | PortType
-  : XarrowWrapperType;
+export type selectedType<
+  t extends "box" | "arrow" = "box" | "arrow"
+> = t extends "box" ? BoxType | PortType : XarrowWrapperType;
 
 export type flowUIType = {
   details: Partial<flowType<"UI">>;
@@ -99,14 +115,21 @@ export type switchSelfType = serverSwitchesType[number] & {
   flowEntries: flowUIType[];
 };
 
-export type modXarrowPropsType = Omit<xarrowPropsType, "start" | "end"> & { start: string; end: string };
+export type modXarrowPropsType = Omit<xarrowPropsType, "start" | "end"> & {
+  start: string;
+  end: string;
+};
 
 export type lineType = modXarrowPropsType;
 
 const SwitchView = (props: { switches: serverSwitchesType }) => {
   const { dpid: sDpid } = useParams<{ dpid: string }>();
   const dpid = Number(sDpid);
-  const [switchSelf, setSwitchSelf] = useState<switchSelfType>({ ...props.switches[dpid], flowEntries: [], dpid });
+  const [switchSelf, setSwitchSelf] = useState<switchSelfType>({
+    ...props.switches[dpid],
+    flowEntries: [],
+    dpid,
+  });
   const [ports, setPorts] = useState(
     switchSelf.ports.map((p) => ({
       shape: "portBox" as const,
@@ -130,7 +153,9 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
       dpid,
       onSuccess: (flows) => {
         setDataFetched(true);
-        const boxesConSize = document.getElementById("boxesContainer").getBoundingClientRect();
+        const boxesConSize = document
+          .getElementById("boxesContainer")
+          .getBoundingClientRect();
         setSwitchSelf((switchSelf) => {
           const newSwitchSelf = { ...switchSelf };
           newSwitchSelf.flowEntries = flows.map((f, i) => {
@@ -164,7 +189,9 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
   );
 
   const toggleFlowVisibilityOfSelected = () => {
-    toggleFlowVisibility(switchSelf.flowEntries.find((f) => f.box.id === selected.id));
+    toggleFlowVisibility(
+      switchSelf.flowEntries.find((f) => f.box.id === selected.id)
+    );
   };
 
   const [lines, setLines] = useState<lineType[]>([
@@ -199,7 +226,8 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
 
   // const getBoxes = () => Object.values(switchSelf.flowEntries).map((f) => f.box);
   const getBoxes = (mySwitchSelf: switchSelfType = null) => {
-    if (mySwitchSelf) return Object.values(mySwitchSelf.flowEntries).map((f) => f.box);
+    if (mySwitchSelf)
+      return Object.values(mySwitchSelf.flowEntries).map((f) => f.box);
     else return Object.values(switchSelf.flowEntries).map((f) => f.box);
   };
 
@@ -210,7 +238,9 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
   const updateBoxOnUi = (updatedBox: BoxType) => {
     setSwitchSelf((switchSelf) => {
       const newSwitchSelf = { ...switchSelf };
-      let newFlow = newSwitchSelf.flowEntries.find((f) => f.box.id === updatedBox.id);
+      let newFlow = newSwitchSelf.flowEntries.find(
+        (f) => f.box.id === updatedBox.id
+      );
       newFlow.box = updatedBox;
       return newSwitchSelf;
     });
@@ -219,7 +249,9 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
   const updateFlowOnUi = (updatedFlow: flowUIType) => {
     setSwitchSelf((switchSelf) => {
       const newSwitchSelf = { ...switchSelf };
-      let i = newSwitchSelf.flowEntries.findIndex((f) => f.box.id === updatedFlow.box.id);
+      let i = newSwitchSelf.flowEntries.findIndex(
+        (f) => f.box.id === updatedFlow.box.id
+      );
       newSwitchSelf.flowEntries[i] = { ...updatedFlow };
       return newSwitchSelf;
     });
@@ -245,13 +277,21 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
       let l = getBoxes().length;
       while (checkExistence("box" + l)) l++;
       var newName = prompt("Enter box name: ", "box" + l);
-      while (checkExistence(newName)) newName = prompt("name taken,choose other: ");
+      while (checkExistence(newName))
+        newName = prompt("name taken,choose other: ");
       if (newName) {
         let newFlow: flowUIType = {
           isSynced: false,
           details: {},
           // visible: true,
-          box: { id: newName, x, y, shape, flowDetailsModalOpen: true, visible: true },
+          box: {
+            id: newName,
+            x,
+            y,
+            shape,
+            flowDetailsModalOpen: true,
+            visible: true,
+          },
         };
         // setBoxes([...boxes, newBox]);
         setSwitchSelf((switchSelf) => {
@@ -261,7 +301,10 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
         });
       }
     },
-    [switchSelf.flowEntries.length, JSON.stringify(getBoxes().map((b) => b.flowDetailsModalOpen))]
+    [
+      switchSelf.flowEntries.length,
+      JSON.stringify(getBoxes().map((b) => b.flowDetailsModalOpen)),
+    ]
   );
 
   const handleDropBox = useCallback(
@@ -274,7 +317,12 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
         addBox(x, y, shape);
       }
     },
-    [getBoxes().length, JSON.stringify(getBoxes().map((b) => b.flowDetailsModalOpen)), selected, addBox]
+    [
+      getBoxes().length,
+      JSON.stringify(getBoxes().map((b) => b.flowDetailsModalOpen)),
+      selected,
+      addBox,
+    ]
   );
 
   const handleBoxClick = useCallback(
@@ -282,10 +330,18 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
       e.stopPropagation(); //so only the click event on the box will fire on not on the container itself
       if (actionState === "Normal") {
         handleSelect(e, box);
-      } else if (actionState === "Add Connections" && selected.id !== box.id && !box.id.includes(":<input>")) {
+      } else if (
+        actionState === "Add Connections" &&
+        selected.id !== box.id &&
+        !box.id.includes(":<input>")
+      ) {
         addLineToSelectedBox(box);
       } else if (actionState === "Remove Connections") {
-        setLines((lines) => lines.filter((line) => !(line.start === selected.id && line.end === box.id)));
+        setLines((lines) =>
+          lines.filter(
+            (line) => !(line.start === selected.id && line.end === box.id)
+          )
+        );
       }
     },
     [actionState, selected]
@@ -298,10 +354,14 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
         background = "rgb(200, 200, 200)";
       } else if (
         (actionState === "Add Connections" &&
-          lines.filter((line) => line.start === selected.id && line.end === box.id).length === 0 &&
+          lines.filter(
+            (line) => line.start === selected.id && line.end === box.id
+          ).length === 0 &&
           !box.id.includes(":<input>")) ||
         (actionState === "Remove Connections" &&
-          lines.filter((line) => line.start === selected.id && line.end === box.id).length > 0)
+          lines.filter(
+            (line) => line.start === selected.id && line.end === box.id
+          ).length > 0)
       ) {
         background = "LemonChiffon";
       }
@@ -315,8 +375,12 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
       // const flowToUpdate = switchSelf.flowEntries.find((f) => f.box.id === startBoxId);
       // updateFlowOnServer();
 
-      const inputFlow = switchSelf.flowEntries.find((f) => f.box.id === startBoxId);
-      const outputFlow = switchSelf.flowEntries.find((f) => f.box.id === endBoxId);
+      const inputFlow = switchSelf.flowEntries.find(
+        (f) => f.box.id === startBoxId
+      );
+      const outputFlow = switchSelf.flowEntries.find(
+        (f) => f.box.id === endBoxId
+      );
       if (inputFlow) {
         inputFlow.details.actions["OUTPUT"] = endBoxId.replace(":<output>", "");
         updateFlow(inputFlow.box.id, inputFlow);
@@ -324,7 +388,10 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
         // inputFlow.isSynced ? updateFlow(inputFlow) : updateFlowOnUi(inputFlow);
       }
       if (outputFlow) {
-        outputFlow.details.match["in_port"] = startBoxId.replace(":<input>", "");
+        outputFlow.details.match["in_port"] = startBoxId.replace(
+          ":<input>",
+          ""
+        );
         updateFlow(outputFlow.box.id, outputFlow);
         // outputFlow.isSynced ? updateFlow(outputFlow) : updateFlowOnUi(outputFlow);
       }
@@ -360,8 +427,12 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
   );
 
   const removeLine = (lineId: XarrowWrapperType["id"]) => {
-    const inputFlow = switchSelf.flowEntries.find((f) => f.box.id === lineId.start);
-    const outputFlow = switchSelf.flowEntries.find((f) => f.box.id === lineId.end);
+    const inputFlow = switchSelf.flowEntries.find(
+      (f) => f.box.id === lineId.start
+    );
+    const outputFlow = switchSelf.flowEntries.find(
+      (f) => f.box.id === lineId.end
+    );
     if (inputFlow) {
       delete inputFlow.details.actions["OUTPUT"];
       updateFlow(inputFlow.box.id, { ...inputFlow });
@@ -402,12 +473,18 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
   };
 
   const delFlowFromServer = (flow: flowUIType, callback?: () => void) => {
-    removeFlowFromSwitch({ flow: flow.details, dpid, onSuccess: () => callback() });
+    removeFlowFromSwitch({
+      flow: flow.details,
+      dpid,
+      onSuccess: () => callback(),
+    });
   };
 
   const delFlow = useCallback(
     (flow: flowUIType) => {
-      const confirm = window.confirm(`are you sure you want to delete ${flow.box.name}?`);
+      const confirm = window.confirm(
+        `are you sure you want to delete ${flow.box.name}?`
+      );
       if (confirm === false) return;
       if (flow.isSynced === false) return delFlowFromUI(flow);
       delFlowFromServer(flow, () => delFlowFromUI(flow));
@@ -416,7 +493,9 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
   );
 
   const checkFlowExistence = (flowMatch: flowType["match"]) =>
-    switchSelf.flowEntries.find((f) => JSON.stringify(f.details.match) === JSON.stringify(flowMatch));
+    switchSelf.flowEntries.find(
+      (f) => JSON.stringify(f.details.match) === JSON.stringify(flowMatch)
+    );
 
   // const getFlowDetailsFromServer = (
   //   matchRule: Partial<flowType["match"]>,
@@ -484,10 +563,16 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
    *
    * @see https://ryu.readthedocs.io/en/latest/app/ofctl_rest.html#modify-flow-entry-strictly
    */
-  const updateFlow = (boxID: string, updatedFlow: flowUIType, callback?: () => void) => {
+  const updateFlow = (
+    boxID: string,
+    updatedFlow: flowUIType,
+    callback?: () => void
+  ) => {
     const flowToDelete = switchSelf.flowEntries.find((f) => f.box.id === boxID);
     if (isEqual(flowToDelete.details, updatedFlow.details)) return;
-    delFlowFromServer(flowToDelete, () => addFlowToServer({ flow: updatedFlow, callback, checkExistence: false }));
+    delFlowFromServer(flowToDelete, () =>
+      addFlowToServer({ flow: updatedFlow, callback, checkExistence: false })
+    );
 
     // const relevantFlow = switchSelf.flowEntries.find((f) => f.box.id === updatedFlow.box.id);
     // console.log(relevantFlow.details);
@@ -580,7 +665,11 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
 
   return (
     <div>
-      <div className="canvasStyle" id="canvas" onClick={() => handleSelect(null)}>
+      <div
+        className="canvasStyle"
+        id="canvas"
+        onClick={() => handleSelect(null)}
+      >
         {dataFetched ? (
           <CanvasContext.Provider value={canvasProps}>
             <TestComponent {...{ canvasProps }} />
@@ -597,7 +686,9 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
             <div className="innerCanvas">
               <ToolboxMenu />
               <PortsBar {...{ ports, portPolarity: "input", lines }} />
-              <BoxesContainer {...{ boxes: getBoxes(), handleDropBox, lines }} />
+              <BoxesContainer
+                {...{ boxes: getBoxes(), handleDropBox, lines }}
+              />
               <PortsBar {...{ ports, portPolarity: "output" }} />
               {/* xarrow connections*/}
 
@@ -609,22 +700,40 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
                 f.box.visible ? (
                   <React.Fragment key={f.box.id}>
                     {f.details.match && f.details.match.in_port ? (
-                      <XarrowWrapper line={{ start: f.details.match.in_port + ":<input>", end: f.box.id }} />
+                      <XarrowWrapper
+                        line={{
+                          start: f.details.match.in_port + ":<input>",
+                          end: f.box.id,
+                        }}
+                      />
                     ) : null}
                     {f.details.actions &&
-                    (isNaN(f.details.actions.OUTPUT as any) === false || f.details.actions.OUTPUT === "LOCAL") ? (
-                      <XarrowWrapper line={{ start: f.box.id, end: f.details.actions.OUTPUT + ":<output>" }} />
+                    (isNaN(f.details.actions.OUTPUT as any) === false ||
+                      f.details.actions.OUTPUT === "LOCAL") ? (
+                      <XarrowWrapper
+                        line={{
+                          start: f.box.id,
+                          end: f.details.actions.OUTPUT + ":<output>",
+                        }}
+                      />
                     ) : null}
                   </React.Fragment>
                 ) : null
               )}
               {/* boxes menu that may be opened */}
               {switchSelf.flowEntries.map((f) => {
-                return f.box.flowDetailsModalOpen ? <FlowDetailsModal key={f.box.id} {...{ flow: f }} /> : null;
+                return f.box.flowDetailsModalOpen ? (
+                  <FlowDetailsModal key={f.box.id} {...{ flow: f }} />
+                ) : null;
               })}
             </div>
             {switchDetailsWindow ? (
-              <SwitchDetailsModal {...{ setSwitchDetailsWindow, flowEntries: switchSelf.flowEntries }} />
+              <SwitchDetailsModal
+                {...{
+                  setSwitchDetailsWindow,
+                  flowEntries: switchSelf.flowEntries,
+                }}
+              />
             ) : null}
           </CanvasContext.Provider>
         ) : (
