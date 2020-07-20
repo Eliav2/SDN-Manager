@@ -7,8 +7,11 @@
 ### the machine simulating the network
 - [open vSwitch](http://www.openvswitch.org/)  installed.
 - [Ryu SDN installed](https://ryu.readthedocs.io/en/latest/getting_started.html).
+    - `$ sudo apt install python3-ryu`
 - [Ryu ofctl_rest](https://ryu.readthedocs.io/en/latest/app/ofctl_rest.html) server application running.
+    - `$ ryu-manager ryu.app.ofctl_rest`
 
+you can use [mininet](http://mininet.org/download/) to emulate a network.
 
 
 ## self notes:
