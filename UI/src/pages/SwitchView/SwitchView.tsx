@@ -24,8 +24,10 @@ import {
   addFlowToSwitch,
   modifyFlowOnSwitch,
   convertActionsFromUI2ServerPost,
+  getSwitchWithPortDescription,
+  serverSwitchType,
 } from "../../utils/serverRequests";
-import { proxyAddress } from "../../App";
+import MainWindow from "../../components/MainWindow";
 
 // import { matchFieldsType, actionsFieldsType } from "./components/aclsFields";
 
@@ -34,17 +36,6 @@ import { proxyAddress } from "../../App";
 // const shapes = ["wideBox", "tallBox", "portBox"];
 
 type CanvasContextType = {
-  setPorts: React.Dispatch<
-    React.SetStateAction<
-      {
-        shape: "portBox";
-        id: string;
-        name: string;
-        port: portDetailsType;
-        ref: any;
-      }[]
-    >
-  >;
   // setBoxes: React.Dispatch<React.SetStateAction<BoxType[]>>;
   updateBoxOnUi: (updatedBox: BoxType) => void;
   updateFlowOnUi: (updatedFlow: flowUIType) => void;
@@ -84,9 +75,7 @@ export const constants = { draggingGrid: [1, 1] };
 export const boxShapes = ["modBox"] as const;
 
 export type boxShapesType = typeof boxShapes[number];
-export type selectedType<t extends "box" | "arrow" = "box" | "arrow"> = t extends "box"
-  ? BoxType | PortType
-  : XarrowWrapperType;
+export type selectedType<t extends "box" | "arrow" = "box" | "arrow"> = t extends "box" ? BoxType | PortType : XarrowWrapperType;
 
 export type flowUIType = {
   details: Partial<flowType<"UI">>;
@@ -95,63 +84,101 @@ export type flowUIType = {
   isSynced: boolean;
 };
 
-export type switchSelfType = serverSwitchesType[number] & {
+export type switchSelfType = serverSwitchType & {
   flowEntries: flowUIType[];
 };
 
-export type modXarrowPropsType = Omit<xarrowPropsType, "start" | "end"> & { start: string; end: string };
+export type modXarrowPropsType = Omit<xarrowPropsType, "start" | "end"> & {
+  start: string;
+  end: string;
+};
 
 export type lineType = modXarrowPropsType;
 
-const SwitchView = (props: { switches: serverSwitchesType }) => {
+const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
   const { dpid: sDpid } = useParams<{ dpid: string }>();
   const dpid = Number(sDpid);
-  const [switchSelf, setSwitchSelf] = useState<switchSelfType>({ ...props.switches[dpid], flowEntries: [], dpid });
-  const [ports, setPorts] = useState(
-    switchSelf.ports.map((p) => ({
+  const [switchSelf, setSwitchSelf] = useState<switchSelfType>({
+    // ...switches[dpid],
+    flowEntries: [],
+    ports: [],
+    name: "",
+    dpid,
+  });
+  const [ports, setPorts] = useState<PortType[]>(
+    // switchSelf.ports.map((p) => ({
+    //   shape: "portBox" as const,
+    //   id: p.port_no,
+    //   name: p.name,
+    //   port: p,
+    //   ref: null,
+    // }))
+    []
+  );
+  // console.log("switchSelf", switchSelf);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [switchDetailsWindow, setSwitchDetailsWindow] = useState(false);
+  useEffect(() => {
+    fetchSwitchFromServer(ofctlRestUrl).then(() => {
+      setIsLoading(false);
+      fetchFlowsFromServer(ofctlRestUrl);
+    });
+  }, []);
+
+  const fetchSwitchFromServer = (url: string) => {
+    return getSwitchWithPortDescription({
+      dpid,
+      url,
+      onSuccess: (switche) => {
+        setSwitchSelf(Object.assign(switchSelf, switche));
+        setPorts(initPorts(switche.ports));
+      },
+    });
+  };
+
+  const fetchFlowsFromServer = (url: string) => {
+    return getFlowsOfSwitch({
+      dpid,
+      url,
+      onSuccess: (flows) => {
+        const boxesConSize = document.getElementById("boxesContainer").getBoundingClientRect();
+        setSwitchSelf((switchSelf) => {
+          const newSwitchSelf = { ...switchSelf };
+          newSwitchSelf.flowEntries = initFlows(flows);
+          return newSwitchSelf;
+        });
+      },
+    });
+  };
+
+  const initPorts = (portsDetails: portDetailsType[]): PortType[] => {
+    return portsDetails.map((p) => ({
       shape: "portBox" as const,
       id: p.port_no,
       name: p.name,
       port: p,
       ref: null,
-    }))
-  );
-  // console.log("switchSelf", switchSelf);
-  const [dataFetched, setDataFetched] = useState(false);
+    }));
+  };
 
-  const [switchDetailsWindow, setSwitchDetailsWindow] = useState(false);
-
-  useEffect(() => {
-    fetchFlowsFromServer();
-  }, []);
-
-  const fetchFlowsFromServer = () => {
-    getFlowsOfSwitch({
-      dpid,
-      onSuccess: (flows) => {
-        setDataFetched(true);
-        const boxesConSize = document.getElementById("boxesContainer").getBoundingClientRect();
-        setSwitchSelf((switchSelf) => {
-          const newSwitchSelf = { ...switchSelf };
-          newSwitchSelf.flowEntries = flows.map((f, i) => {
-            let x = boxesConSize.width * (0.2 + 0.8 * Math.random());
-            let y = boxesConSize.height * (0.2 + 0.8 * Math.random());
-            return {
-              details: f,
-              visible: false,
-              isSynced: true,
-              box: {
-                x,
-                y,
-                visible: false,
-                id: JSON.stringify(f.match),
-                name: "flow" + i,
-              },
-            };
-          });
-          return newSwitchSelf;
-        });
-      },
+  const initFlows = (flowsDetails: flowType[]): flowUIType[] => {
+    const boxesConSize = document.getElementById("boxesContainer").getBoundingClientRect();
+    return flowsDetails.map((f, i) => {
+      let x = boxesConSize.width * (0.2 + 0.8 * Math.random());
+      let y = boxesConSize.height * (0.2 + 0.8 * Math.random());
+      return {
+        details: f,
+        visible: false,
+        isSynced: true,
+        box: {
+          x,
+          y,
+          visible: false,
+          id: JSON.stringify(f.match),
+          name: "flow" + i,
+        },
+      };
     });
   };
 
@@ -251,7 +278,14 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
           isSynced: false,
           details: {},
           // visible: true,
-          box: { id: newName, x, y, shape, flowDetailsModalOpen: true, visible: true },
+          box: {
+            id: newName,
+            x,
+            y,
+            shape,
+            flowDetailsModalOpen: true,
+            visible: true,
+          },
         };
         // setBoxes([...boxes, newBox]);
         setSwitchSelf((switchSelf) => {
@@ -402,7 +436,12 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
   };
 
   const delFlowFromServer = (flow: flowUIType, callback?: () => void) => {
-    removeFlowFromSwitch({ flow: flow.details, dpid, onSuccess: () => callback() });
+    removeFlowFromSwitch({
+      url: ofctlRestUrl,
+      flow: flow.details,
+      dpid,
+      onSuccess: () => callback(),
+    });
   };
 
   const delFlow = useCallback(
@@ -454,6 +493,7 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
         }
       }
       addFlowToSwitch({
+        url: ofctlRestUrl,
         dpid,
         flow: flow.details,
         onSuccess: (flowDetails) => {
@@ -519,7 +559,6 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
 
   const canvasProps = useMemo(
     () => ({
-      setPorts,
       // setBoxes,
       updateBoxOnUi,
       setLines,
@@ -545,7 +584,6 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
       updateFlowName,
     }),
     [
-      setPorts,
       // setBoxes,
       updateBoxOnUi,
       setLines,
@@ -578,65 +616,74 @@ const SwitchView = (props: { switches: serverSwitchesType }) => {
 
   // }
 
+  if (isLoading === true) return <MainWindow {...{ isLoading }} />;
+
   return (
     <div>
       <div className="canvasStyle" id="canvas" onClick={() => handleSelect(null)}>
-        {dataFetched ? (
-          <CanvasContext.Provider value={canvasProps}>
-            <TestComponent {...{ canvasProps }} />
+        {/* {isLoading ? ( */}
+        <CanvasContext.Provider value={canvasProps}>
+          <TestComponent {...{ canvasProps }} />
 
-            <div className="switchTopBar">
-              <div className="switchTitle">{switchSelf.name}</div>
-              <InfoOutlinedIcon
-                fontSize={"large"}
-                // color="black"
-                className="infoButton"
-                onClick={() => setSwitchDetailsWindow(!switchDetailsWindow)}
-              />
-            </div>
-            <div className="innerCanvas">
-              <ToolboxMenu />
-              <PortsBar {...{ ports, portPolarity: "input", lines }} />
-              <BoxesContainer {...{ boxes: getBoxes(), handleDropBox, lines }} />
-              <PortsBar {...{ ports, portPolarity: "output" }} />
-              {/* xarrow connections*/}
+          <div className="switchTopBar">
+            <div className="switchTitle">{switchSelf.name}</div>
+            <InfoOutlinedIcon
+              fontSize={"large"}
+              // color="black"
+              className="infoButton"
+              onClick={() => setSwitchDetailsWindow(!switchDetailsWindow)}
+            />
+          </div>
+          <div className="innerCanvas">
+            <ToolboxMenu />
+            <PortsBar {...{ ports, portPolarity: "input", lines }} />
+            <BoxesContainer {...{ boxes: getBoxes(), handleDropBox, lines }} />
+            <PortsBar {...{ ports, portPolarity: "output" }} />
+            {/* xarrow connections*/}
 
-              {/* {lines.map((line, i) => (
+            {/* {lines.map((line, i) => (
                 <XarrowWrapper key={line.start + "-" + line.end + i} {...{ line, selected }} />
               ))} */}
-              {/* draw connections */}
-              {switchSelf.flowEntries.map((f) =>
-                f.box.visible ? (
-                  <React.Fragment key={f.box.id}>
-                    {f.details.match && f.details.match.in_port ? (
-                      <XarrowWrapper line={{ start: f.details.match.in_port + ":<input>", end: f.box.id }} />
-                    ) : null}
-                    {f.details.actions &&
-                    (isNaN(f.details.actions.OUTPUT as any) === false || f.details.actions.OUTPUT === "LOCAL") ? (
-                      <XarrowWrapper line={{ start: f.box.id, end: f.details.actions.OUTPUT + ":<output>" }} />
-                    ) : null}
-                  </React.Fragment>
-                ) : null
-              )}
-              {/* boxes menu that may be opened */}
-              {switchSelf.flowEntries.map((f) => {
-                return f.box.flowDetailsModalOpen ? <FlowDetailsModal key={f.box.id} {...{ flow: f }} /> : null;
-              })}
-            </div>
-            {switchDetailsWindow ? (
-              <SwitchDetailsModal {...{ setSwitchDetailsWindow, flowEntries: switchSelf.flowEntries }} />
-            ) : null}
-          </CanvasContext.Provider>
-        ) : (
-          <div className="mainWindow">
-            <h3>fetching switch data...</h3>
-            <BounceLoader size={150} color={"#123abc"} loading={true} />
+            {/* draw connections */}
+            {switchSelf.flowEntries.map((f) =>
+              f.box.visible ? (
+                <React.Fragment key={f.box.id}>
+                  {f.details.match && f.details.match.in_port ? (
+                    <XarrowWrapper
+                      line={{
+                        start: f.details.match.in_port + ":<input>",
+                        end: f.box.id,
+                      }}
+                    />
+                  ) : null}
+                  {f.details.actions &&
+                  (isNaN(f.details.actions.OUTPUT as any) === false || f.details.actions.OUTPUT === "LOCAL") ? (
+                    <XarrowWrapper
+                      line={{
+                        start: f.box.id,
+                        end: f.details.actions.OUTPUT + ":<output>",
+                      }}
+                    />
+                  ) : null}
+                </React.Fragment>
+              ) : null
+            )}
+            {/* boxes menu that may be opened */}
+            {switchSelf.flowEntries.map((f) => {
+              return f.box.flowDetailsModalOpen ? <FlowDetailsModal key={f.box.id} {...{ flow: f }} /> : null;
+            })}
           </div>
-        )}
+          {switchDetailsWindow ? (
+            <SwitchDetailsModal
+              {...{
+                setSwitchDetailsWindow,
+                flowEntries: switchSelf.flowEntries,
+              }}
+            />
+          ) : null}
+        </CanvasContext.Provider>
       </div>
-      {/* {console.log("//////////////////////////////////////////////////////")} */}
     </div>
   );
 };
 export default SwitchView;
-// export default DragDropContext(HTML5Backend)(SwitchView);

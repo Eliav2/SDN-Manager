@@ -4,7 +4,7 @@
  * The propose of all these requests is to serve the UI and return parsed data as the UI expect.
  */
 
-import { proxyAddress } from "./../App";
+// import { ofctlRestUrl } from "./../App";
 import { fieldsNameType } from "../pages/SwitchView/components/aclsFields";
 import { isEqual, isMatch } from "lodash";
 
@@ -55,14 +55,19 @@ export type flowType<T extends "serverGet" | "serverPost" | "UI" = "UI"> = {
 };
 
 const getListOfSwitchesDpids = ({
+  url,
   onSuccess,
   onError,
 }: {
+  url: string;
   onSuccess: (switchesDpids: string[]) => any;
-  onError?: (error: any) => any;
+  onError?: (error: Error) => any;
 }) => {
-  return fetch(proxyAddress + "http://localhost:8080/stats/switches")
-    .then((res) => res.json())
+  return fetch(url + "/stats/switches")
+    .then((res) => {
+      if (res.ok === false) return onError({ message: res.statusText, name: "URIError" });
+      return res.json();
+    })
     .then(
       (switchesDpids: string[]) => {
         onSuccess(switchesDpids);
@@ -74,19 +79,21 @@ const getListOfSwitchesDpids = ({
 };
 
 const getPortDescription = ({
+  url,
   dpid,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
-  onSuccess: (ports: portDetailsType) => any;
-  onError?: (error: any) => any;
+  onSuccess: (switchPorts: { [dpid: number]: portDetailsType[] }) => any;
+  onError?: (error: Error) => any;
 }) => {
-  return fetch(proxyAddress + "http://localhost:8080/stats/portdesc/" + dpid)
+  return fetch(url + "/stats/portdesc/" + dpid)
     .then((res) => res.json())
     .then(
-      (ports: portDetailsType) => {
-        onSuccess(ports);
+      (switchPorts: { [dpid: number]: portDetailsType[] }) => {
+        onSuccess(switchPorts);
       },
       (error) => {
         if (onError) onError(error);
@@ -94,40 +101,73 @@ const getPortDescription = ({
     );
 };
 
-export const getAllSwitchesWithPortDescription = ({
+export const getSwitchWithPortDescription = ({
+  url,
+  dpid,
   onSuccess,
   onError,
 }: {
-  onSuccess: (switches: serverSwitchesType) => any;
-  onError?: (error: any) => any;
+  url: string;
+  dpid: number;
+  onSuccess: (switche: serverSwitchType) => any;
+  onError?: (error: Error) => any;
 }) => {
-  let switches: { [dpid: string]: portDetailsType[] } = {};
-  getListOfSwitchesDpids({
+  return getPortDescription({
+    url,
+    dpid: Number(dpid),
+    onSuccess: (switchPorts) => {
+      const ports = switchPorts[dpid];
+      let parsed_switch = { ports, dpid };
+      for (let i = 0; i < ports.length; i++) {
+        if (ports[i].port_no === "LOCAL") {
+          //set name of switch to name of local port
+          parsed_switch = Object.assign(parsed_switch, { name: ports[i].name });
+        }
+      }
+      onSuccess(parsed_switch as serverSwitchType);
+    },
+    onError: (error) => onError(error),
+  });
+};
+
+export const getAllSwitchesWithPortDescription = ({
+  url,
+  onSuccess,
+  onError,
+}: {
+  url: string;
+  onSuccess: (switches: serverSwitchesType) => any;
+  onError?: (error: Error) => any;
+}) => {
+  let switches: { [dpid: string]: serverSwitchType } = {};
+  return getListOfSwitchesDpids({
+    url,
     onSuccess: (switchesDpids) => {
       const promises = switchesDpids.map((dpid) =>
-        getPortDescription({
+        getSwitchWithPortDescription({
+          url,
           dpid: Number(dpid),
-          onSuccess: (ports) => {
-            switches = Object.assign(switches, ports);
+          onSuccess: (switche) => {
+            switches = Object.assign(switches, { [dpid]: switche });
           },
           onError: (error) => onError(error),
         })
       );
       Promise.all(promises).then(() => {
-        let parsed_switches: serverSwitchesType = {};
-        for (let dpid in switches) {
-          // for each switch
-          for (let i = 0; i < switches[dpid].length; i++) {
-            if (switches[dpid][i].port_no === "LOCAL") {
-              //set name of switch to name of local port
-              parsed_switches[dpid] = Object.assign(
-                { ports: switches[dpid] },
-                { name: switches[dpid][i].name, dpid: Number(dpid) }
-              );
-            }
-          }
-        }
-        onSuccess(parsed_switches);
+        // let parsed_switches: serverSwitchesType = {};
+        // for (let dpid in switches) {
+        //   // for each switch
+        //   for (let i = 0; i < switches[dpid].length; i++) {
+        //     if (switches[dpid][i].port_no === "LOCAL") {
+        //       //set name of switch to name of local port
+        //       parsed_switches[dpid] = Object.assign(
+        //         { ports: switches[dpid] },
+        //         { name: switches[dpid][i].name, dpid: Number(dpid) }
+        //       );
+        //     }
+        //   }
+        // }
+        onSuccess(switches);
       });
     },
     onError: (error) => {
@@ -136,9 +176,7 @@ export const getAllSwitchesWithPortDescription = ({
   });
 };
 
-export const convertActionsFromServerGet2UI = (
-  actions: flowType<"serverGet">["actions"]
-): flowType<"UI">["actions"] => {
+export const convertActionsFromServerGet2UI = (actions: flowType<"serverGet">["actions"]): flowType<"UI">["actions"] => {
   //   const actionsList = actions.map((ac) => ac.split(":")) as string[][];
   //   const actionsObjects = actionsList.map((ac) => ({ [ac[0]]: ac[1] })) as flowType<"UI">["actions"];
   //   console.log(actionsObjects);
@@ -223,14 +261,16 @@ const convertFlowUI2serverPost = (flow: Partial<flowType>): Partial<flowType<"se
 
 export const getFlowsOfSwitch = ({
   dpid,
+  url,
   onSuccess,
   onError,
 }: {
   dpid: number;
+  url: string;
   onSuccess: (flows: flowType<"UI">[]) => any;
-  onError?: (error: any) => any;
+  onError?: (error: Error) => any;
 }) => {
-  fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid)
+  return fetch(url + "/stats/flow/" + dpid)
     .then((res) => {
       if (res.status !== 200) alert(res.status);
       return res.json();
@@ -246,15 +286,17 @@ export const getFlowsOfSwitch = ({
 };
 
 export const removeFlowFromSwitch = ({
+  url,
   dpid,
   flow,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   flow: Partial<flowType<"UI">>;
   onSuccess?: () => any;
-  onError?: (error: any) => any;
+  onError?: (error: string | Error) => any;
 }) => {
   const parsedActions = convertActionsFromUI2ServerPost(flow.actions);
   const reqBody = { ...flow, dpid, actions: parsedActions };
@@ -263,9 +305,9 @@ export const removeFlowFromSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(proxyAddress + "http://localhost:8080/stats/flowentry/delete_strict", requestOptions).then(
+  fetch(url + "/stats/flowentry/delete_strict", requestOptions).then(
     (response) => {
-      if (response.status !== 200) onError(response.status);
+      if (response.status !== 200) onError(response.statusText);
       if (onSuccess) onSuccess();
     },
     (error) => {
@@ -279,22 +321,24 @@ export const removeFlowFromSwitch = ({
  * @param flowMatch all flows matching given fields of current flow will be returned.
  */
 export const getFilteredFlowsFromSwitch = ({
+  url,
   dpid,
   flowMatch,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   flowMatch: Partial<flowType<"UI">>;
   onSuccess: (matchingFlows: flowType[]) => any;
-  onError?: (error: any) => any;
+  onError?: (error: Error) => any;
 }) => {
   const requestOptions = {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ match: flowMatch }),
   };
-  fetch(proxyAddress + "http://localhost:8080/stats/flow/" + dpid, requestOptions)
+  fetch(url + "/stats/flow/" + dpid, requestOptions)
     .then((response) => {
       if (response.status !== 200) alert(response.status);
       else return response.json();
@@ -321,7 +365,7 @@ export const getFilteredFlowsFromSwitch = ({
 //   dpid: number;
 //   matchRule: flowType["match"];
 //   onSuccess: (flow: flowType<"UI">) => any;
-//   onError?: (error: any) => any;
+//   onError?: (error: Error) => any;
 // }) => {
 //   getFilteredFlowsFromSwitch({
 //     dpid,
@@ -338,15 +382,17 @@ export const getFilteredFlowsFromSwitch = ({
  * @param flowMatch all flows matching given fields of current flow will be returned.
  */
 export const addFlowToSwitch = ({
+  url,
   dpid,
   flow,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   flow: Partial<flowType<"UI">>;
   onSuccess?: (flow: flowType<"UI">) => any;
-  onError?: (error: any) => any;
+  onError?: (error: Error) => any;
 }) => {
   let serverPostFlow = convertFlowUI2serverPost(flow);
   const { match = {}, actions = [], priority = 1 } = serverPostFlow;
@@ -362,13 +408,14 @@ export const addFlowToSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(proxyAddress + "http://localhost:8080/stats/flowentry/add", requestOptions).then(
+  fetch(url + "/stats/flowentry/add", requestOptions).then(
     (response) => {
       if (response.status !== 200) alert(response.status);
       else {
         //after flow successfully  added retrieve all details of flow from server because some of the details may be set by the server
         if (onSuccess) {
           getFilteredFlowsFromSwitch({
+            url,
             dpid,
             flowMatch: { match },
             onSuccess: (flows) => {
@@ -410,15 +457,18 @@ export const addFlowToSwitch = ({
 };
 
 export const modifyFlowOnSwitch = ({
+  url,
   dpid,
+
   updatedFlow,
   onSuccess,
   onError,
 }: {
+  url: string;
   dpid: number;
   updatedFlow: Partial<flowType<"UI">>;
   onSuccess?: () => any;
-  onError?: (error: any) => any;
+  onError?: (error: Error) => any;
 }) => {
   const serverFlow = convertFlowUI2serverPost(updatedFlow);
   console.log(serverFlow);
@@ -431,7 +481,7 @@ export const modifyFlowOnSwitch = ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(reqBody),
   };
-  fetch(proxyAddress + "http://localhost:8080/stats/flowentry/modify_strict", requestOptions).then(
+  fetch(url + "/stats/flowentry/modify_strict", requestOptions).then(
     (response) => {
       if (response.status !== 200) alert(response.status);
       else {

@@ -7,52 +7,62 @@ import Loading from "./components/Loading";
 import { Container } from "@material-ui/core";
 import { getAllSwitchesWithPortDescription, serverSwitchesType } from "./utils/serverRequests";
 import ServerError from "./components/ServerError";
+import MainWindow from "./components/MainWindow";
+import LoginPage from "./pages/LoginPage";
 
-export const proxyAddress = "http://localhost:9089/";
-// in production proxyAddress should be '' !
+const proxyAddress = "http://localhost:9089";
+const defaultOfctlRestUrl = proxyAddress + "/" + "http://localhost:8080";
 
 const App = () => {
-  const [dataFetched, setDataFetched] = useState(false);
   const [switches, setSwitches] = useState<serverSwitchesType>({});
-  const [connectFailed, setConnectFailed] = useState(false);
+  const [ofctlRestUrl, setOfctlRestUrl] = useState(defaultOfctlRestUrl);
 
-  useEffect(() => {
-    getAllSwitchesWithPortDescription({
-      onSuccess: (switches) => {
-        setSwitches(switches);
-        setDataFetched(true);
-      },
-      onError: (error: any) => {
-        setConnectFailed(true);
-        throw error;
-      },
-    });
-  }, []);
+  // const [dataFetched, setDataFetched] = useState(false);
+  // const [connectFailed, setConnectFailed] = useState(false);
+
+  // const fetchSwitches = (url: string) => {
+  //   getAllSwitchesWithPortDescription({
+  //     url,
+  //     onSuccess: (switches) => {
+  //       setSwitches(switches);
+  //       setDataFetched(true);
+  //     },
+  //     onError: (error: any) => {
+  //       setConnectFailed(true);
+  //       throw error;
+  //     },
+  //   });
+  // };
+
+  // useEffect(() => {
+  //   fetchSwitches(ofctlRestUrl);
+  // }, []);
+
+  // if (connectFailed === true) return <ServerError />;
+  // if (dataFetched === false) return <Loading />;
 
   return (
     <Container maxWidth="lg">
       <header className="mainTitle">SDN Manager</header>
       <hr />
-      {dataFetched ? (
-        <Router>
-          <Switch>
-            <Route exact path="/">
-              <SwitchesPage switches={switches} />
-            </Route>
-            <Route path="/switch/:dpid">
-              <SwitchView switches={switches} />
-            </Route>
-            <Route path="*">
-              <div className="mainWindow">
-                <h3>404 Not Found</h3>
-              </div>
-            </Route>
-          </Switch>
-        </Router>
-      ) : (
-        <div className="mainWindow">{connectFailed ? <ServerError /> : <Loading />}</div>
-      )}
-      <div style={{ marginTop: 30 }}></div>
+      <Router>
+        <Switch>
+          <Route path="/switches">
+            <SwitchesPage url={ofctlRestUrl} />
+          </Route>
+          <Route path="/switch/:dpid">
+            <SwitchView {...{ switches, ofctlRestUrl }} />
+          </Route>
+          <Route exact path="/">
+            <LoginPage {...{ ofctlRestUrl, setOfctlRestUrl, setSwitches }} />
+          </Route>
+          <Route path="*">
+            <MainWindow>
+              <h3>404 Not Found</h3>
+            </MainWindow>
+          </Route>
+        </Switch>
+      </Router>
     </Container>
   );
 };
