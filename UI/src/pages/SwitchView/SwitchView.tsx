@@ -143,6 +143,7 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
       url,
       onSuccess: (flows) => {
         const boxesConSize = document.getElementById("boxesContainer").getBoundingClientRect();
+
         setSwitchSelf((switchSelf) => {
           const newSwitchSelf = { ...switchSelf };
           newSwitchSelf.flowEntries = initFlows(flows);

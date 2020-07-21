@@ -1,2 +1,2 @@
 #!/bin/sh
-node corsServer.js
+node proxyServer.js
