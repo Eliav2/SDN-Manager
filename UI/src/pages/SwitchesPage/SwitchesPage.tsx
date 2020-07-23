@@ -7,7 +7,7 @@ import MainWindow from "../../components/MainWindow";
 const SwitchesPage = ({ url }: { url: string }) => {
   const [switches, setSwitches] = useState<serverSwitchesType>({});
 
-  const [fetchFailed, setFetchFailed] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState<null | Error>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -18,8 +18,8 @@ const SwitchesPage = ({ url }: { url: string }) => {
         setIsLoading(false);
       },
       onError: (error: Error) => {
-        console.log(error.message);
-        setFetchFailed(true);
+        // console.log(error.message);
+        setFetchFailed(error);
         throw error;
       },
     });

@@ -5,7 +5,6 @@ import KeyboardArrowUpOutlinedIcon from "@material-ui/icons/KeyboardArrowUpOutli
 import { CanvasContext } from "../SwitchView";
 import { PortType } from "./Port";
 import { BoxType } from "./Box";
-import { Container } from "@material-ui/core";
 
 const actions = {
   modBox: ["Edit Mods", "Add Connections", "Remove Connections", "Hide", "Delete"],
@@ -96,11 +95,7 @@ const TopBar = () => {
   };
 
   return (
-    <div
-      className="topBarStyle"
-      style={{ height: c.selected === null ? "0" : "60px" }}
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="topBarStyle" style={{ height: c.selected === null ? "0" : "60px" }} onClick={(e) => e.stopPropagation()}>
       <div className="topBarLabel" onClick={() => c.handleSelect(null)}>
         <KeyboardArrowUpOutlinedIcon fontSize={"large"} className=" topBarToggleIcon" />
       </div>

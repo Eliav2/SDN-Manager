@@ -4,12 +4,12 @@ import "./SwitchView.css";
 import { BoxType } from "./components/Box";
 import { actionsTypes } from "./components/TopBar";
 import XarrowWrapper, { XarrowWrapperType } from "./components/XarrowWrapper";
-import FlowDetailsModal from "./modals/FlowDetailsModal";
+import FlowDetailsModal from "./modals/FlowDetailsModal/FlowDetailsModal";
 import { useParams } from "react-router";
 import PortsBar from "./components/PortsBar";
 import TestComponent from "./components/TestComponent";
 import BounceLoader from "react-spinners/BounceLoader";
-import SwitchDetailsModal from "./modals/SwitchDetailsModal";
+import SwitchDetailsModal from "./modals/SwitchDetailsModal/SwitchDetailsModal";
 import _, { isEqual, flow } from "lodash";
 import { PortType } from "./components/Port";
 import { xarrowPropsType } from "react-xarrows";
@@ -28,7 +28,7 @@ import {
   serverSwitchType,
 } from "../../utils/serverRequests";
 import MainWindow from "../../components/MainWindow";
-
+import ArrowsDrawer from "./components/ArrowsDrawer";
 // import { matchFieldsType, actionsFieldsType } from "./components/aclsFields";
 
 // import MaterialIcon from "material-icons-react";
@@ -65,7 +65,17 @@ type CanvasContextType = {
     callback?: (updatedFlowDetails: flowType) => void;
     checkExistence?: boolean;
   }) => void;
-  updateFlowOnServer: (prevID: string, updatedFlow: flowUIType, callback?: () => void) => void;
+  updateFlow: ({
+    boxID,
+    updatedFlow,
+    callback,
+    checkExistence,
+  }: {
+    boxID: string;
+    updatedFlow: flowUIType;
+    callback?: () => void;
+    checkExistence?: boolean;
+  }) => void;
   updateFlowName: (flowId: string, newName: string) => void;
 };
 
@@ -116,9 +126,11 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
     []
   );
   // console.log("switchSelf", switchSelf);
-  const [isLoading, setIsLoading] = useState(true);
 
   const [switchDetailsWindow, setSwitchDetailsWindow] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchFailed, setFetchFailed] = useState<null | Error>(null);
   useEffect(() => {
     fetchSwitchFromServer(ofctlRestUrl).then(() => {
       setIsLoading(false);
@@ -134,6 +146,7 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
         setSwitchSelf(Object.assign(switchSelf, switche));
         setPorts(initPorts(switche.ports));
       },
+      onError: (error) => setFetchFailed(error),
     });
   };
 
@@ -259,7 +272,7 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
     updateFlowOnUi(newFlow);
   };
 
-  const checkExistence = useCallback(
+  const checkIdExistence = useCallback(
     (id) => {
       return [...getBoxes(), ...ports].map((b) => b.id).includes(id);
     },
@@ -271,9 +284,9 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
       x -= x % constants.draggingGrid[0];
       y -= y % constants.draggingGrid[1];
       let l = getBoxes().length;
-      while (checkExistence("box" + l)) l++;
+      while (checkIdExistence("box" + l)) l++;
       var newName = prompt("Enter box name: ", "box" + l);
-      while (checkExistence(newName)) newName = prompt("name taken,choose other: ");
+      while (checkIdExistence(newName)) newName = prompt("name taken,choose other: ");
       if (newName) {
         let newFlow: flowUIType = {
           isSynced: false,
@@ -353,14 +366,18 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
       const inputFlow = switchSelf.flowEntries.find((f) => f.box.id === startBoxId);
       const outputFlow = switchSelf.flowEntries.find((f) => f.box.id === endBoxId);
       if (inputFlow) {
-        inputFlow.details.actions["OUTPUT"] = endBoxId.replace(":<output>", "");
-        updateFlow(inputFlow.box.id, inputFlow);
-        // inputFlow.details.actions.filter(ac=>ac==="OUTPUT").forEach
+        // inputFlow.details.actions["OUTPUT"] = endBoxId.replace(":<output>", "");
+        inputFlow.details.actions
+          .filter((ac) => ac.type === "OUTPUT")
+          .forEach((ac) => {
+            ac.port = endBoxId.replace(":<output>", "");
+          });
         // inputFlow.isSynced ? updateFlow(inputFlow) : updateFlowOnUi(inputFlow);
+        updateFlow({ boxID: inputFlow.box.id, updatedFlow: inputFlow });
       }
       if (outputFlow) {
         outputFlow.details.match["in_port"] = startBoxId.replace(":<input>", "");
-        updateFlow(outputFlow.box.id, outputFlow);
+        updateFlow({ boxID: outputFlow.box.id, updatedFlow: outputFlow });
         // outputFlow.isSynced ? updateFlow(outputFlow) : updateFlowOnUi(outputFlow);
       }
       // }
@@ -398,12 +415,20 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
     const inputFlow = switchSelf.flowEntries.find((f) => f.box.id === lineId.start);
     const outputFlow = switchSelf.flowEntries.find((f) => f.box.id === lineId.end);
     if (inputFlow) {
-      delete inputFlow.details.actions["OUTPUT"];
-      updateFlow(inputFlow.box.id, { ...inputFlow });
+      // delete inputFlow.details.actions["OUTPUT"];
+      // inputFlow.details.actions,fil
+      inputFlow.details.actions = inputFlow.details.actions.filter(
+        (ac) => ac.type != "OUTPUT" || (ac.type === "OUTPUT" && ac.port != lineId.start)
+      );
+      // .forEach((ac) => {
+      //   ac.port = lineId.end.replace(":<output>", "");
+      // });
+
+      updateFlow({ boxID: inputFlow.box.id, updatedFlow: { ...inputFlow } });
     }
     if (outputFlow) {
       delete outputFlow.details.match["in_port"];
-      updateFlow(outputFlow.box.id, { ...outputFlow });
+      updateFlow({ boxID: outputFlow.box.id, updatedFlow: { ...outputFlow } });
     }
   };
 
@@ -458,6 +483,18 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
   const checkFlowExistence = (flowMatch: flowType["match"]) =>
     switchSelf.flowEntries.find((f) => JSON.stringify(f.details.match) === JSON.stringify(flowMatch));
 
+  const checkFlowExistenceAndAlert = (flowMatch: flowType["match"]) => {
+    const flowExist = checkFlowExistence(flowMatch);
+    if (flowExist) {
+      alert(
+        "the flow " +
+          flowExist.box.name +
+          " with the same match rule already exist.\nFlows with same match rules are not allowed."
+      );
+    }
+    return flowExist;
+  };
+
   // const getFlowDetailsFromServer = (
   //   matchRule: Partial<flowType["match"]>,
   //   callback?: (flowsDetails: flowType) => void
@@ -482,6 +519,7 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
       checkExistence?: boolean;
     }) => {
       const { match = {} } = flow.details;
+      // if (checkExistence === true && checkFlowExistenceAndAlert(match)) return;
       if (checkExistence) {
         const flowExist = checkFlowExistence(match);
         if (flowExist) {
@@ -525,7 +563,18 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
    *
    * @see https://ryu.readthedocs.io/en/latest/app/ofctl_rest.html#modify-flow-entry-strictly
    */
-  const updateFlow = (boxID: string, updatedFlow: flowUIType, callback?: () => void) => {
+  const updateFlow = ({
+    boxID,
+    updatedFlow,
+    callback = () => {},
+    checkExistence = true,
+  }: {
+    boxID: string;
+    updatedFlow: flowUIType;
+    callback?: () => void;
+    checkExistence?: boolean;
+  }) => {
+    if (checkExistence === true && checkFlowExistenceAndAlert(updatedFlow.details.match)) return;
     const flowToDelete = switchSelf.flowEntries.find((f) => f.box.id === boxID);
     if (isEqual(flowToDelete.details, updatedFlow.details)) return;
     delFlowFromServer(flowToDelete, () => addFlowToServer({ flow: updatedFlow, callback, checkExistence: false }));
@@ -581,7 +630,7 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
       delFlow,
       addFlowToServer,
       updateFlowOnUi,
-      updateFlowOnServer: updateFlow,
+      updateFlow,
       updateFlowName,
     }),
     [
@@ -617,7 +666,7 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
 
   // }
 
-  if (isLoading === true) return <MainWindow {...{ isLoading }} />;
+  if (isLoading === true || fetchFailed) return <MainWindow {...{ isLoading, fetchFailed }} />;
 
   return (
     <div>
@@ -646,7 +695,8 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
                 <XarrowWrapper key={line.start + "-" + line.end + i} {...{ line, selected }} />
               ))} */}
             {/* draw connections */}
-            {switchSelf.flowEntries.map((f) =>
+            <ArrowsDrawer {...{ flowEntries: switchSelf.flowEntries, ports }} />
+            {/* {switchSelf.flowEntries.map((f) =>
               f.box.visible ? (
                 <React.Fragment key={f.box.id}>
                   {f.details.match && f.details.match.in_port ? (
@@ -668,7 +718,7 @@ const SwitchView = ({ ofctlRestUrl }: { ofctlRestUrl: string }) => {
                   ) : null}
                 </React.Fragment>
               ) : null
-            )}
+            )} */}
             {/* boxes menu that may be opened */}
             {switchSelf.flowEntries.map((f) => {
               return f.box.flowDetailsModalOpen ? <FlowDetailsModal key={f.box.id} {...{ flow: f }} /> : null;

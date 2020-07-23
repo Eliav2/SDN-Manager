@@ -5,7 +5,7 @@
  */
 
 // import { ofctlRestUrl } from "./../App";
-import { fieldsNameType } from "../pages/SwitchView/components/aclsFields";
+import { fieldsNameType, actionsFields } from "../pages/SwitchView/components/aclsFields";
 import { isEqual, isMatch } from "lodash";
 
 export type portDetailsType = {
@@ -35,8 +35,8 @@ export type serverSwitchesType = {
 type flowActionsType<T extends "serverGet" | "serverPost" | "UI" = "UI"> = T extends "serverGet"
   ? string[]
   : T extends "serverPost"
-  ? { type: fieldsNameType<"actions">; port: number }[]
-  : { [key in fieldsNameType<"actions">]: string };
+  ? { type: fieldsNameType<"actions">; port: number }[] // : { [key in fieldsNameType<"actions">]: string };
+  : { type: fieldsNameType<"actions">; port: string }[];
 
 export type flowType<T extends "serverGet" | "serverPost" | "UI" = "UI"> = {
   match: { [key in fieldsNameType<"match">]?: string };
@@ -126,7 +126,9 @@ export const getSwitchWithPortDescription = ({
       }
       onSuccess(parsed_switch as serverSwitchType);
     },
-    onError: (error) => onError(error),
+    onError: (error) => {
+      if (onError) onError(error);
+    },
   });
 };
 
@@ -176,16 +178,97 @@ export const getAllSwitchesWithPortDescription = ({
   });
 };
 
+// // type tmp1 = typeof "number"
+// const string2Type = (str: string): string | number | object => {
+//   const tmp: any = null;
+//   switch (str) {
+//     case "number":
+//       return tmp as number;
+//     case "string":
+//       return tmp as string;
+//     case "object":
+//       return tmp as object;
+//   }
+// };
+
+// // { [key: string]: string }
+// const objectTypes2Type = (obj: { [key: string]: any }, objTypes: { [key: string]: string }) => {
+//   const objWithTypes = {} as { [key: string]: any };
+//   for (let key in obj) {
+//     const propWithType = string2Type(objTypes[key]);
+//     objWithTypes[key] = obj[key] as typeof propWithType;
+//   }
+// };
+
+// const obj = {
+//   OUTPUT: ["port","number"],
+//   SET_VLAN_VID: ["vlan_vid", "number"],
+//   SET_VLAN_PCP: ["vlan_pcp"],
+//   STRIP_VLAN: [],
+//   SET_DL_SRC: ["dl_src"],
+//   SET_DL_DST: ["dl_dst"],
+//   SET_NW_SRC: ["nw_src"],
+//   SET_NW_DST: ["nw_dst"],
+//   SET_NW_TOS: ["nw_tos"],
+//   SET_TP_SRC: ["tp_src"],
+//   SET_TP_DST: ["tp_dst"],
+//   ENQUEUE: ["queue_id", "pot"],
+// };
+
+// const OUTPUTtype =  string2Type(obj.OUTPUT[2])
+
+// const OUTPUT = obj.OUTPUT[0] as typeof OUTPUTtype
+
+const actionsServerPostExamples = actionsFields.map((ac) => ({ ...JSON.parse(ac[2]) }));
+
 export const convertActionsFromServerGet2UI = (actions: flowType<"serverGet">["actions"]): flowType<"UI">["actions"] => {
+  // const actionsUI = actions
+  //   .map((ac) => ac.split(":"))
+  //   .reduce((acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }), {} as flowType<"UI">["actions"]);
+  // return actionsUI;
+
+  // const actionType2actionName = {
+  //   OUTPUT: ["port"],
+  //   SET_VLAN_VID: ["vlan_vid"],
+  //   SET_VLAN_PCP: ["vlan_pcp"],
+  //   STRIP_VLAN: [] as any,
+  //   SET_DL_SRC: ["dl_src"],
+  //   SET_DL_DST: ["dl_dst"],
+  //   SET_NW_SRC: ["nw_src"],
+  //   SET_NW_DST: ["nw_dst"],
+  //   SET_NW_TOS: ["nw_tos"],
+  //   SET_TP_SRC: ["tp_src"],
+  //   SET_TP_DST: ["tp_dst"],
+  //   ENQUEUE: ["queue_id", "port"],
+  // } as const;
+
+  // const actionsUI = actions
+  //   .map((ac) => ac.split(":"))
+  //   .map(([type, actionName]) => {
+  //     // (actionType2actionName[type] as any).map();
+  //     let actionsFieldsDict = actionsFields.map((ac) => ({ [ac[0]]: JSON.parse(ac[2]) } as const));
+  //     // for(let key in actionsFieldsDict){
+  //     //   actionsFieldsDict[key] = JSON.parse(actionsFieldsDict[key])
+  //     // }
+  //     return { type, actionName };
+  //   });
+  // const [actionsTypes, actionsValues] = actions.map((ac) => ac.split(":"));
+  const actionsList = actions.map((ac) => ac.split(":"));
+  const actionsUI: any = [];
+  for (let i = 0; i < actionsList.length; i++) {
+    const actionObj = { ...actionsServerPostExamples.find((ac) => ac.type === actionsList[i][0]) };
+    for (let key in actionObj) {
+      if (key === "type") continue;
+      actionObj[key] = actionsList[i][1];
+    }
+    actionsUI.push(actionObj);
+  }
+  return actionsUI;
+
   //   const actionsList = actions.map((ac) => ac.split(":")) as string[][];
   //   const actionsObjects = actionsList.map((ac) => ({ [ac[0]]: ac[1] })) as flowType<"UI">["actions"];
   //   console.log(actionsObjects);
   //   return actionsObjects;
-
-  const actionsUI = actions
-    .map((ac) => ac.split(":"))
-    .reduce((acu, cu) => Object.assign(acu, { [cu[0]]: cu[1] }), {} as flowType<"UI">["actions"]);
-  return actionsUI;
 
   // return (Object.keys(actions) as Array<keyof typeof actions>).map((ac) => ({
   //   type: ac,

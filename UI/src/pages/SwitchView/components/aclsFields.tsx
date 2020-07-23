@@ -49,11 +49,7 @@ import { BoxType } from "./Box";
 export const matchFields = [
   ["in_port", "Switch input port (int)", '{"in_port": 7}'],
   ["in_phy_port", "Switch physical input port (int)", '{"in_phy_port": 5, "in_port": 3}'],
-  [
-    "metadata",
-    "Metadata passed between tables (int or string)",
-    '{"metadata": 12345} or {"metadata": "0x1212/0xffff"}',
-  ],
+  ["metadata", "Metadata passed between tables (int or string)", '{"metadata": 12345} or {"metadata": "0x1212/0xffff"}'],
   ["eth_src", "Ethernet source address (string)", '{"eth_src": "aa:bb:cc:11:22:33"}'],
   ["dl_src", "Ethernet source address (string)", '{"eth_src": "aa:bb:cc:11:22:33"}'],
   ["eth_dst", "Ethernet destination address (string)", '{"eth_dst": "aa:bb:cc:11:22:33/00:00:00:00:ff:ff"}'],
@@ -79,11 +75,7 @@ export const matchFields = [
   ["arp_spa", "ARP source IPv4 address (string)", '{"arp_spa": "192.168.0.11", "eth_type": 2054}'],
   ["arp_tpa", "ARP target IPv4 address (string)", '{"arp_tpa": "192.168.0.44/24", "eth_type": 2054}'],
   ["arp_sha", "ARP source hardware address (string)", '{"arp_sha": "aa:bb:cc:11:22:33", "eth_type": 2054}'],
-  [
-    "arp_tha",
-    "ARP target hardware address (string)",
-    '{"arp_tha": "aa:bb:cc:11:22:33/00:00:00:00:ff:ff", "eth_type": 2054}',
-  ],
+  ["arp_tha", "ARP target hardware address (string)", '{"arp_tha": "aa:bb:cc:11:22:33/00:00:00:00:ff:ff", "eth_type": 2054}'],
   ["ipv6_src", "IPv6 source address (string)", '{"ipv6_src": "2001::aaaa:bbbb:cccc:1111", "eth_type": 34525}'],
   ["ipv6_dst", "IPv6 destination address (string)", '{"ipv6_dst": "2001::ffff:cccc:bbbb:1111/64", "eth_type": 34525}'],
   ["ipv6_flabel", "IPv6 Flow Label (int)", '{"ipv6_flabel": 2, "eth_type": 34525}'],
@@ -112,11 +104,7 @@ export const matchFields = [
     "PBB I-SID (int or string) (Openflow1.3+)",
     '{"pbb_isid": 5, "eth_type": 35047} or{"pbb_isid": "0x05/0xff", "eth_type": 35047}',
   ],
-  [
-    "tunnel_id",
-    "Logical Port Metadata (int or string) (Openflow1.3+)",
-    '{"tunnel_id": 7} or {"tunnel_id": "0x07/0xff"}',
-  ],
+  ["tunnel_id", "Logical Port Metadata (int or string) (Openflow1.3+)", '{"tunnel_id": 7} or {"tunnel_id": "0x07/0xff"}'],
   [
     "ipv6_exthdr",
     "IPv6 Extension Header pseudo-field (int or string) (Openflow1.3+)",
@@ -229,13 +217,9 @@ export const actionsFields = [
   [
     "SET_FIELD",
     'Set a "field" using "value" (The set of keywords available for "field" is the same as match field)',
-    "See Example of set-field action",
+    '{"type": "SET_FIELD","field": "vlan_vid","value": 4102}',
   ],
-  [
-    "PUSH_PBB",
-    'Push a new PBB service tag with "ethertype" (Openflow1.3+)',
-    '{"type": "PUSH_PBB", "ethertype": 35047}',
-  ],
+  ["PUSH_PBB", 'Push a new PBB service tag with "ethertype" (Openflow1.3+)', '{"type": "PUSH_PBB", "ethertype": 35047}'],
   ["POP_PBB", "Pop the outer PBB service tag (Openflow1.3+)", '{"type": "POP_PBB"}'],
   // [
   //   "COPY_FIELD",
@@ -248,35 +232,25 @@ export const actionsFields = [
     'Extensible action for the experimenter (Set "base64" or "ascii" to "data_type" field)',
     '{"type": "EXPERIMENTER", "experimenter": 101, "data": "AAECAwQFBgc=", "data_type": "base64"}',
   ],
-  [
-    "GOTO_TABLE",
-    '(Instruction) Setup the next table identified by "table_id"',
-    '{"type": "GOTO_TABLE", "table_id": 8}',
-  ],
-  [
-    "WRITE_METADATA",
-    '(Instruction) Setup the metadata field using "metadata" and "metadata_mask"',
-    '{"type": "WRITE_METADATA", "metadata": 0x3, "metadata_mask": 0x3}',
-  ],
-  [
-    "METER",
-    '(Instruction) Apply meter identified by "meter_id" (deprecated in Openflow1.5)',
-    '{"type": "METER", "meter_id": 3}',
-  ],
-  [
-    "WRITE_ACTIONS",
-    "(Instruction) Write the action(s) onto the datapath action set",
-    '{"type": "WRITE_ACTIONS", actions":[{"type":"POP_VLAN",},{ "type":"OUTPUT", "port": 2}]}',
-  ],
-  ["CLEAR_ACTIONS", "(Instruction) Clears all actions from the datapath action set", '{"type": "CLEAR_ACTIONS"}'],
+  ["GOTO_TABLE", '(Instruction) Setup the next table identified by "table_id"', '{"type": "GOTO_TABLE", "table_id": 8}'],
+  // [
+  //   "WRITE_METADATA",
+  //   '(Instruction) Setup the metadata field using "metadata" and "metadata_mask"',
+  //   '{"type": "WRITE_METADATA", "metadata": 3, "metadata_mask": 3}',
+  // ],
+  ["METER", '(Instruction) Apply meter identified by "meter_id" (deprecated in Openflow1.5)', '{"type": "METER", "meter_id": 3}'],
+  // [
+  //   "WRITE_ACTIONS",
+  //   "(Instruction) Write the action(s) onto the datapath action set",
+  //   '{"type": "WRITE_ACTIONS", actions":[{"type":"POP_VLAN",},{ "type":"OUTPUT", "port": 2}]}',
+  // ],
+  // ["CLEAR_ACTIONS", "(Instruction) Clears all actions from the datapath action set", '{"type": "CLEAR_ACTIONS"}'],
 ] as const;
 
 // export type actionsFieldsType = typeof actionsFields[number][0];
 
 export type sectionNameType = "actions" | "match";
-export type fieldsType<secName extends sectionNameType> = secName extends "match"
-  ? typeof matchFields
-  : typeof actionsFields;
+export type fieldsType<secName extends sectionNameType> = secName extends "match" ? typeof matchFields : typeof actionsFields;
 export type fieldsNameType<secName extends sectionNameType> = fieldsType<secName>[number][0];
 
 // matchFields.map(m=> ({[m[0]]:m[1].concat}))

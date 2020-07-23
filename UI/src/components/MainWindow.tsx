@@ -33,13 +33,13 @@ export default ({
   isLoading,
 }: {
   children?: React.ReactNode;
-  fetchFailed?: boolean;
+  fetchFailed?: null | Error;
   isLoading?: boolean;
 }) => {
   const classes = useStyles();
 
   let comp = children;
-  if (fetchFailed && fetchFailed === true) comp = <ServerError />;
+  if (fetchFailed) comp = <ServerError {...{ fetchFailed }} />;
   else if (isLoading && isLoading === true) comp = <Loading />;
 
   return (

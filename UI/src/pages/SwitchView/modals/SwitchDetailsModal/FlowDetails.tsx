@@ -1,52 +1,15 @@
-import React, { useContext, useRef } from "react";
-import { CanvasContext, switchSelfType, flowUIType } from "../SwitchView";
-import Draggable from "react-draggable";
-import { Rnd } from "react-rnd";
-import CloseOutlinedIcon from "@material-ui/icons/CloseOutlined";
+import React, { useContext } from "react";
 import EditOutlinedIcon from "@material-ui/icons/EditOutlined";
 import DeleteOutlineIcon from "@material-ui/icons/DeleteOutline";
 import Tooltip from "@material-ui/core/Tooltip";
-// import { matchFieldsType } from "../components/aclsFields";
-
-type SwitchDetailsWindowProps = {
-  setSwitchDetailsWindow: (value: React.SetStateAction<boolean>) => void;
-  flowEntries: switchSelfType["flowEntries"];
-};
-
-const SwitchDetailsModal = ({ setSwitchDetailsWindow, flowEntries = [] }: SwitchDetailsWindowProps) => {
-  return (
-    <Draggable enableUserSelectHack={false}>
-      <div className="switchDetailsWindow" onClick={(e) => e.stopPropagation()}>
-        <CloseOutlinedIcon
-          fontSize={"large"}
-          className="button closeButton"
-          onClick={() => setSwitchDetailsWindow(false)}
-        />
-        <div className={"header"}>{`Flow Entries`}</div>
-        <hr style={{ width: "90%" }} />
-        {flowEntries.map((flowEntry, i) =>
-          flowEntry.isSynced ? (
-            <FlowDetails key={JSON.stringify(flowEntry.details.match)} {...{ flowEntry, i }}></FlowDetails>
-          ) : null
-        )}
-        {/* <h3>unconfirmed flows</h3>
-        {flowEntries.map((flowEntry, i) =>
-          flowEntry.isSynced ? null : (
-            <FlowDetails key={JSON.stringify(flowEntry.details.match)} {...{ flowEntry, i }}></FlowDetails>
-          )
-        )} */}
-      </div>
-      {/* </Rnd> */}
-    </Draggable>
-  );
-};
+import { CanvasContext, switchSelfType, flowUIType } from "../../SwitchView";
 
 type FlowDetailsProps = {
   i: number;
   flowEntry: flowUIType;
 };
 
-const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
+export default ({ flowEntry, i }: FlowDetailsProps) => {
   const c = useContext(CanvasContext);
   const { details } = flowEntry;
   // details.
@@ -65,11 +28,7 @@ const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
           </div>
         ))}
     >
-      <div
-        className="propBoxEntryPreview grayHover"
-        style={{ background }}
-        onClick={() => c.toggleFlowVisibility(flowEntry)}
-      >
+      <div className="propBoxEntryPreview grayHover" style={{ background }} onClick={() => c.toggleFlowVisibility(flowEntry)}>
         <div style={{ width: 20 }}>{flowEntry.box.name}:</div>
         <div style={{ flex: 0.9 }}>
           {
@@ -110,5 +69,3 @@ const FlowDetails = ({ flowEntry, i }: FlowDetailsProps) => {
     </Tooltip>
   );
 };
-
-export default SwitchDetailsModal;
